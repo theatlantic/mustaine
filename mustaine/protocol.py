@@ -94,11 +94,13 @@ class Fault(Exception):
     message = property(_get_message, _set_message)
 
     def __repr__(self):
-        return "<mustaine.protocol.Fault: \"%s: %s\">" % (self.code, self.message,)
+        return u"<mustaine.protocol.Fault: \"%s: %s\">" % (self.code, self.message,)
 
     def __str__(self):
-        return self.__repr__()
+        return self.__repr__().encode('ascii', 'ignore')
 
+    def __unicode__(self):
+        return self.__repr__()
 
 class Binary(object):
     def __init__(self, value):
