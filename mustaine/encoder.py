@@ -179,7 +179,7 @@ def encode_call(call):
             method    += '_' + data_type
         arguments += arg
 
-    encoded  = pack('>cBB', 'c', 1, 0)
+    encoded  = pack('>cBB', 'c', call.version, 0)
     encoded += headers
     encoded += pack('>cH', 'm', len(method)) + method
     encoded += arguments

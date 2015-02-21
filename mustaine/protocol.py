@@ -1,12 +1,15 @@
+import copy
+
 # transparent types used for hessian serialization
 # objects of this type can appear on the wire but have no native python type
 
 class Call(object):
-    def __init__(self, method=None, args=None, headers=None, overload=None):
+    def __init__(self, method=None, args=None, headers=None, overload=None, version=1):
         self._method   = method or ''
         self._args     = args or list()
         self._headers  = headers or dict()
         self._overload = overload or False
+        self.version = version
 
     def _get_method(self):
         return self._method
@@ -14,6 +17,8 @@ class Call(object):
     def _set_method(self, value):
         if isinstance(value, str):
             self._method = value
+        elif isinstance(value, unicode):
+            self._method = value.encode('utf-8')
         else:
             raise TypeError("Call.method must be a string")
 
@@ -58,9 +63,10 @@ class Call(object):
 
 
 class Reply(object):
-    def __init__(self, value=None, headers=None):
+    def __init__(self, value=None, headers=None, version=None):
         self.value    = value # unmanaged property
         self._headers = headers or dict()
+        self.version = version
 
     def _get_headers(self):
         return self._headers
@@ -116,37 +122,64 @@ class Remote(object):
         self.url       = url
 
 
+
 class Object(object):
-    def __init__(self, meta_type, **kwargs):
-        self.__meta_type = meta_type
 
-        if kwargs:
-            for key in kwargs:
-                self.__dict__[key] = kwargs[key]
-
-    @property
-    def _meta_type(self):
-        return self.__meta_type
+    def __init__(self, *args, **kwargs):
+        for f, arg in zip(self._mustaine_field_names, args):
+            setattr(self, f, arg)
+        for f, arg in kwargs.iteritems():
+            setattr(self, f, arg)
 
     def __repr__(self):
-        return "<%s object at %s>" % (self.__meta_type, hex(id(self)),)
+        return (u"<%s.%s object at 0x%x>"
+            % (type(self).__module__, type(self).__name__, id(self)))
+
+    def __str__(self):
+        return self.__repr__().encode('ascii', 'ignore')
+
+    def __unicode__(self):
+        return self.__repr__()
 
     def __getstate__(self):
-        # clear metadata for clean pickling
-        t = self.__meta_type
-        del self.__meta_type
+        obj_dict = copy.deepcopy(self.__dict__)
+        obj_dict.pop('_mustaine_factory_args', None)
+        obj_dict.pop('_mustaine_field_names', None)
+        return obj_dict
 
-        d = self.__dict__.copy()
-        d['__meta_type'] = t
+    def __setstate__(self, obj_dict):
+        self.__dict__.update(obj_dict)
 
-        # restore metadata
-        self.__meta_type = t
+    def __reduce__(self):
+        return (object_factory, self._mustaine_factory_args, self.__dict__)
 
-        return d
 
-    def __setstate__(self, d):
-        self.__meta_type = d['__meta_type']
-        del d['__meta_type']
+def cls_factory(name, fields=None, bases=None, attrs=None):
+    cls_attrs = copy.deepcopy(attrs) if attrs else {}
+    fields = fields or []
 
-        self.__dict__.update(d)
+    for i, f in enumerate(fields):
+        if isinstance(f, unicode):
+            fields[i] = f.encode('utf-8')
 
+    if isinstance(name, unicode):
+        name = name.encode('utf-8')
+
+    module_name, _, cls_name = name.rpartition('.')
+
+    bases = bases or tuple()
+    cls_attrs.update({
+        '_mustaine_field_names': fields,
+        '_mustaine_factory_args': (name, fields, bases, attrs),
+    })
+
+    if module_name:
+        cls_attrs['__module__'] = module_name
+
+    bases += (Object, )
+
+    return type(cls_name, bases, cls_attrs)
+
+
+def object_factory(name, fields, bases=None, attrs=None):
+    return cls_factory(name, fields, bases, attrs)()

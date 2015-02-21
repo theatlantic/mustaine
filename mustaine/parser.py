@@ -6,15 +6,24 @@ try:
 except ImportError:
     from StringIO import StringIO
 
-from mustaine.protocol import *
+from mustaine.protocol import (
+    Call, Reply, Fault, Binary, Remote, Object, cls_factory)
 
-# Implementation of Hessian 1.0.2 deserialization
-#   see: http://hessian.caucho.com/doc/hessian-1.0-spec.xtp
 
 class ParseError(Exception):
     pass
 
 class Parser(object):
+
+    version = None
+    _adapter = None
+
+    def __init__(self):
+        self._version_adapters = {
+            1: ParserV1,
+            2: ParserV2,
+        }
+
     def parse_string(self, string):
         if isinstance(string, unicode):
             stream = StringIO(string.encode('utf-8'))
@@ -24,7 +33,6 @@ class Parser(object):
         return self.parse_stream(stream)
 
     def parse_stream(self, stream):
-        self._refs   = []
         self._result = None
 
         if hasattr(stream, 'read') and hasattr(stream.read, '__call__'):
@@ -35,27 +43,23 @@ class Parser(object):
         while True:
             code = self._read(1)
 
-            if   code == 'c':
+            if code == 'H':
                 if self._result:
                     raise ParseError('Encountered duplicate type header')
+                self.read_version()
 
-                version = self._read(2)
-                if version != '\x01\x00':
-                    raise ParseError("Encountered unrecognized call version %r" % (version,))
+            elif code == 'R':
+                self._result = Reply(version=self.version)
 
-                self._result = Call()
-                continue
-
-            elif code == 'r':
+            elif code == 'c':
                 if self._result:
                     raise ParseError('Encountered duplicate type header')
+                self.read_version()
+                self._result = Call(version=self.version)
 
-                version = self._read(2)
-                if version != '\x01\x00':
-                    raise ParseError("Encountered unrecognized reply version %r" % (version,))
-
-                self._result = Reply()
-                continue
+            elif not self._result and code == 'r':
+                self.read_version()
+                self._result = Reply(version=self.version)
 
             else:
                 if not self._result:
@@ -64,7 +68,6 @@ class Parser(object):
                 if   code == 'H':
                     key, value = self._read_keyval()
                     self._result.headers[key] = value
-                    continue
 
                 elif code == 'm':
                     if not isinstance(self._result, Call):
@@ -83,24 +86,32 @@ class Parser(object):
                     if self._result.value:
                         raise ParseError('Encountered illegal extra object within reply')
 
-                    self._result.value = self._read_fault()
-                    continue
+                    self._result.value = self._adapter._read_fault()
+                    break
 
                 elif code == 'z':
                     break
 
                 else:
                     if isinstance(self._result, Call):
-                        self._result.args.append(self._read_object(code))
+                        self._result.args.append(self._adapter._read_object(code))
                     else:
                         if self._result.value:
                             raise ParseError('Encountered illegal extra object within reply')
 
-                        self._result.value = self._read_object(code)
+                        self._result.value = self._adapter._read_object(code)
+                        if self.version == 2:
+                            break
 
         # have to hit a 'z' to land here, TODO derefs?
         return self._result
 
+    def read_version(self):
+        version = unpack('<h', self._read(2))[0]
+        if version not in self._version_adapters:
+            raise ParseError("Encountered unrecognized call version %r" % (version,))
+        self._adapter = self._version_adapters[version](base_parser=self)
+        self.version = version
 
     def _read(self, n):
         try:
@@ -112,10 +123,28 @@ class Parser(object):
         else:
             if len(r) == 0:
                 raise ParseError('Encountered unexpected end of stream')
-
         return r
 
-    def _read_object(self, code):
+
+class ParserV1(object):
+    """
+    Implementation of Hessian 1.0.2 deserialization
+        see: http://hessian.caucho.com/doc/hessian-1.0-spec.xtp
+    """
+
+    version = 1
+
+    def __init__(self, base_parser):
+        self._base_parser = base_parser
+        self._classdefs = []
+        self._refs   = []
+
+    def _read(self, n):
+        return self._base_parser._read(n)
+
+    def _read_object(self, code=None):
+        if code is None:
+            code = self._read(1)
         if   code == 'N':
             return None
         elif code == 'T':
@@ -181,8 +210,9 @@ class Parser(object):
 
         return ''.join(bytes).decode('utf-8')
 
-    def _read_binary(self):
-        len = unpack('>H', self._read(2))[0]
+    def _read_binary(self, len=None):
+        if len is None:
+            len = unpack('>H', self._read(2))[0]
         return Binary(self._read(len))
 
     def _read_remote(self):
@@ -201,8 +231,9 @@ class Parser(object):
         r.url = self._read_object(code)
         return r
 
-    def _read_list(self):
-        code = self._read(1)
+    def _read_list(self, code=None):
+        if code is None:
+            code = self._read(1)
 
         if code == 't':
             # read and discard list type
@@ -230,7 +261,7 @@ class Parser(object):
             type_len = unpack('>H', self._read(2))[0]
             if type_len > 0:
                 # a typed map deserializes to an object
-                result = Object(self._read(type_len))
+                result = cls_factory(self._read(type_len))()
             else:
                 result = {}
 
@@ -253,7 +284,6 @@ class Parser(object):
             code = self._read(1)
 
         if isinstance(result, Object):
-            fields['__meta_type'] = result._meta_type
             result.__setstate__(fields)
         else:
             result.update(fields)
@@ -270,3 +300,218 @@ class Parser(object):
 
         return key, value
 
+
+class ParserV2(ParserV1):
+    """
+    Implementation of Hessian 2.0 Serialization Protocol
+        see: http://hessian.caucho.com/doc/hessian-serialization.html
+    """
+
+    version = 2
+
+    def _read_object(self, code=None):
+        if code is None:
+            code = self._read(1)
+
+        if '\x00' <= code <= '\x1F':
+            # utf-8 string length 0-32
+            return self._read_compact_string(code)
+        elif '\x20' <= code <= '\x2F':
+            # binary data length 0-16
+            length = ord(code) - 0x20
+            return self._read_binary(length)
+        elif '\x30' <= code <= '\x33':
+            # utf-8 string length 0-1023
+            return self._read_compact_string(code)
+        elif '\x34' <= code <= '\x37':
+            # binary data length 0-1023
+            len_b1 = (ord(code) - 0x34) << 8
+            len_b0 = ord(self._read(1))
+            length = len_b0 + len_b1
+            return self._read_binary(length)
+        elif '\x38' <= code <= '\x3F':
+            # three-octet compact long (-x40000 to x3ffff)
+            b2 = (ord(code) - 0x3c) << 16
+            b1 = ord(self._read(1)) << 8
+            b0 = ord(self._read(1))
+            return long(b0 + b1 + b2)
+        elif code == '\x43':
+            # object type definition ('C')
+            self._read_class_def()
+            return self._read_object()
+        elif code == '\x4A':
+            # 64-bit UTC millisecond date ('J')
+            return self._read_date()
+        elif code == '\x4B':
+            # 32-bit UTC minute date ('K')
+            return self._read_compact_date()
+        elif code in ('\x52', '\x53'):
+            # utf-8 string non-final chunk ('R')
+            # utf-8 string final chunk ('S')
+            b1 = ord(self._read(1)) << 8
+            b0 = ord(self._read(1))
+            return self._read_v2_string(code, b0 + b1)
+        elif code == '\x55':
+            # variable-length list/vector ('U')
+            self._read_list(typed=True, fixed_length=False)
+        elif code == '\x56':
+            # fixed-length list/vector ('V')
+            self._read_list(typed=True, fixed_length=True)
+        elif code == '\x57':
+            # variable-length untyped list/vector ('W')
+            self._read_list(typed=False, fixed_length=False)
+        elif code == '\x58':
+            # fixed-length untyped list/vector ('X')
+            self._read_list(typed=False, fixed_length=True)
+        elif code == '\x59':
+            # long encoded as 32-bit int ('Y')
+            return long(unpack('>l', self._read(4))[0])
+        elif code == '\x5B':
+            # double 0.0
+            return 0.0
+        elif code == '\x5C':
+            # double 1.0
+            return 1.0
+        elif code == '\x5D':
+            # double byte
+            return float(unpack('<b', self._read(1))[0])
+        elif code == '\x5E':
+            # double short
+            return float(unpack('<h', self._read(2))[0])
+        elif '\x60' <= code <= '\x6F':
+            # object with direct type
+            return self._read_class_object(code)
+        elif '\x70' <= code <= '\x77':
+            # fixed list with direct length
+            list_len = ord(code) - 0x70
+            return self._read_list(typed=True, fixed_length=True, length=list_len)
+        elif '\x78' <= code <= '\x7F':
+            # fixed untyped list with direct length
+             list_len = ord(code) - 0x78
+             return self._read_list(typed=False, fixed_length=True, length=list_len)
+        elif '\x80' <= code <= '\xBF':
+            # one-octet compact int (-x10 to x3f, x90 is 0)
+            return ord(code) - 0x90
+        elif '\xC0' <= code <= '\xCF':
+            # two-octet compact int (-x800 to x7ff)
+            return 256 * (ord(code) - 0xc8) + int(unpack('<b', self._read(1))[0])
+        elif '\xD0' <= code <= '\xD7':
+            # three-octet compact int (-x40000 to x3ffff)
+            b0 = int(unpack('<b', self._read(1))[0])
+            b1 = int(unpack('<b', self._read(1))[0])
+            return 65536 * (ord(code) - 0xd4) + 256 * b1 + b0
+        elif '\xD8' <= code <= '\xEF':
+            # one-octet compact long (-x8 to xf, xe0 is 0)
+            return long(ord(code) - 0xe0)
+        elif '\xF0' <= code <= '\xFF':
+            # two-octet compact long (-x800 to x7ff, xf8 is 0)
+            b1 = (ord(code) - 0x80) << 8
+            b0 = ord(self._read(1))
+            return long(b0 + b1)
+        else:
+            return super(ParserV2, self)._read_object(code)
+
+    def _read_list(self, typed=False, fixed_length=False, length=None):
+        code = self._read(1)
+
+        if code in ('t', 'l'):
+            # Hessian 1.0 list
+            return super(ParserV2, self)._read_list(code=code)
+
+        if typed:
+            # read and discard list type
+            self._read_object(code)
+            code = None
+
+        result = []
+        self._refs.append(result)
+
+        if fixed_length:
+            if length is None:
+                length = self._read_object(code)
+                code = None
+            while len(result) < length:
+                result.append(self._read_object(code))
+                code = None
+        else:
+            obj = self._read_object(code)
+            code = None
+            while obj != 'Z':
+                result.append(obj)
+                obj = self._read_object()
+
+        return result
+
+    def _read_v2_string(self, code, length):
+        if length is 0:
+            return u''
+        chunks = []
+        while True:
+            if length is None:
+                b1 = ord(self._read(1)) << 8
+                b0 = ord(self._read(1))
+                length = b0 + b1
+            chars = []
+            while length > 0:
+                char = self._read(1)
+                if '\x00' <= char <= '\x79':
+                    chars.append(char)
+                elif '\xC2' <= char <= '\xDF':
+                    chars.append(char + self._read(1))
+                elif '\xE0' <= char <= '\xEF':
+                    chars.append(char + self._read(2))
+                elif '\xF0' <= char <= '\xF4':
+                    chars.append(char + self._read(3))
+                length -= 1
+
+            chunks.append(''.join(chars).decode('utf-8'))
+            length = None
+            if code == 'S':
+                break
+            try:
+                code = self._read(1)
+            except ParseError:
+                break
+        return ''.join(chunks)
+
+    def _read_class_def(self):
+        type_name = self._read_object()
+        num_fields = self._read_object()
+        fields = []
+        for i in xrange(0, num_fields):
+            fields.append(self._read_object())
+        self._classdefs.append(cls_factory(type_name, fields))
+
+    def _read_class_object(self, code):
+        classdef_num = ord(code) - 0x60
+        classdef = self._classdefs[classdef_num]
+        field_vals = {}
+        for f in classdef._mustaine_field_names:
+            field_vals[f] = self._read_object()
+        return classdef(**field_vals)
+
+    def _read_compact_date(self):
+        minutes = unpack('>l', self._read(4))[0]
+        return datetime.datetime.fromtimestamp(minutes * 60)
+
+    def _read_compact_string(self, code):
+        if code >= '\x30':
+            len_bytes = chr(ord(code) - 0x30) + self._read(1)
+        else:
+            len_bytes = '\x00' + code
+        length = unpack('>H', len_bytes)[0]
+
+        bytes = []
+        while length > 0:
+            byte = self._read(1)
+            if '\x00' <= byte <= '\x7F':
+                bytes.append(byte)
+            elif '\xC2' <= byte <= '\xDF':
+                bytes.append(byte + self._read(1))
+            elif '\xE0' <= byte <= '\xEF':
+                bytes.append(byte + self._read(2))
+            elif '\xF0' <= byte <= '\xF4':
+                bytes.append(byte + self._read(3))
+            length -= 1
+
+        return ''.join(bytes).decode('utf-8')
