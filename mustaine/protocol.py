@@ -107,14 +107,21 @@ class Fault(Exception):
 
 
 class Binary(object):
+
     def __init__(self, value):
         self.value = value
+
     def __add__(self, value):
         if self.value == None:
             return Binary(value)
         else:
             return Binary(self.value + value.value)
 
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) and self.value == other.value
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class Remote(object):
     def __init__(self, type_name=None, url=None):
@@ -122,8 +129,21 @@ class Remote(object):
         self.url       = url
 
 
+class ObjectMeta(type):
+
+    def __instancecheck__(cls, other):
+        if Object not in other.__class__.__mro__:
+            return False
+        cls_type_name = '.'.join([cls.__module__, cls.__name__])
+        if cls_type_name == 'mustaine.protocol.Object':
+            return True
+        other_type_name = '.'.join([type(other).__module__, type(other).__name__])
+        return cls_type_name == other_type_name
+
 
 class Object(object):
+
+    __metaclass__ = ObjectMeta
 
     def __init__(self, *args, **kwargs):
         for f, arg in zip(self._mustaine_field_names, args):
@@ -153,6 +173,12 @@ class Object(object):
     def __reduce__(self):
         return (object_factory, self._mustaine_factory_args, self.__dict__)
 
+    def __eq__(self, other):
+        return (isinstance(other, self.__class__)
+            and self.__getstate__() == other.__getstate__())
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 def cls_factory(name, fields=None, bases=None, attrs=None):
     cls_attrs = copy.deepcopy(attrs) if attrs else {}
@@ -181,5 +207,7 @@ def cls_factory(name, fields=None, bases=None, attrs=None):
     return type(cls_name, bases, cls_attrs)
 
 
-def object_factory(name, fields, bases=None, attrs=None):
-    return cls_factory(name, fields, bases, attrs)()
+def object_factory(name, fields=None, bases=None, attrs=None, **kwargs):
+    if fields is None and kwargs:
+        fields = kwargs.keys()
+    return cls_factory(name, fields, bases, attrs)(**kwargs)

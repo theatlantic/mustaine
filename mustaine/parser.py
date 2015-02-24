@@ -13,6 +13,11 @@ from mustaine.protocol import (
 class ParseError(Exception):
     pass
 
+
+class ListMapTerminator(Exception):
+    pass
+
+
 class Parser(object):
 
     version = None
@@ -43,7 +48,7 @@ class Parser(object):
         while True:
             code = self._read(1)
 
-            if code == 'H':
+            if code == 'H' and not self.version:
                 if self._result:
                     raise ParseError('Encountered duplicate type header')
                 self.read_version()
@@ -51,7 +56,7 @@ class Parser(object):
             elif code == 'R':
                 self._result = Reply(version=self.version)
 
-            elif code == 'c':
+            elif self.version == 1 and code == 'c':
                 if self._result:
                     raise ParseError('Encountered duplicate type header')
                 self.read_version()
@@ -65,11 +70,11 @@ class Parser(object):
                 if not self._result:
                     raise ParseError("Invalid Hessian message marker: %r" % (code,))
 
-                if   code == 'H':
+                if self.version == 1 and code == 'H':
                     key, value = self._read_keyval()
                     self._result.headers[key] = value
 
-                elif code == 'm':
+                elif self.version == 1 and code == 'm':
                     if not isinstance(self._result, Call):
                         raise ParseError('Encountered illegal method name within reply')
 
@@ -79,7 +84,7 @@ class Parser(object):
                     self._result.method = self._read(unpack('>H', self._read(2))[0])
                     continue
 
-                elif code == 'f':
+                elif self.version == 1 and code == 'f':
                     if not isinstance(self._result, Reply):
                         raise ParseError('Encountered illegal fault within call')
 
@@ -89,22 +94,28 @@ class Parser(object):
                     self._result.value = self._adapter._read_fault()
                     break
 
-                elif code == 'z':
+                elif self.version == 1 and code == 'z':
                     break
 
                 else:
                     if isinstance(self._result, Call):
-                        self._result.args.append(self._adapter._read_object(code))
+                        self._result.args.append(self.read_object(code))
                     else:
                         if self._result.value:
                             raise ParseError('Encountered illegal extra object within reply')
 
-                        self._result.value = self._adapter._read_object(code)
+                        self._result.value = self.read_object(code)
                         if self.version == 2:
                             break
 
         # have to hit a 'z' to land here, TODO derefs?
         return self._result
+
+    def read_object(self, code=None):
+        try:
+            return self._adapter._read_object(code)
+        except ListMapTerminator:
+            raise ParseError("Unhandled list/map terminator code ('Z')")
 
     def read_version(self):
         version = unpack('<h', self._read(2))[0]
@@ -190,7 +201,7 @@ class ParserV1(object):
 
     def _read_date(self):
         timestamp = unpack('>q', self._read(8))[0]
-        return datetime.datetime.fromtimestamp(timestamp / 1000)
+        return datetime.datetime.utcfromtimestamp(timestamp / 1000)
 
     def _read_string(self):
         len = unpack('>H', self._read(2))[0]
@@ -213,6 +224,8 @@ class ParserV1(object):
     def _read_binary(self, len=None):
         if len is None:
             len = unpack('>H', self._read(2))[0]
+        if len == 0:
+            return Binary("")
         return Binary(self._read(len))
 
     def _read_remote(self):
@@ -318,33 +331,49 @@ class ParserV2(ParserV1):
             return self._read_compact_string(code)
         elif '\x20' <= code <= '\x2F':
             # binary data length 0-16
-            length = ord(code) - 0x20
-            return self._read_binary(length)
+            # length = ord(code) - 0x20
+            return self._read_binary(code)
         elif '\x30' <= code <= '\x33':
             # utf-8 string length 0-1023
             return self._read_compact_string(code)
         elif '\x34' <= code <= '\x37':
             # binary data length 0-1023
-            len_b1 = (ord(code) - 0x34) << 8
-            len_b0 = ord(self._read(1))
-            length = len_b0 + len_b1
-            return self._read_binary(length)
+            # len_b1 = (ord(code) - 0x34) << 8
+            # len_b0 = ord(self._read(1))
+            # length = len_b0 + len_b1
+            return self._read_binary(code)
         elif '\x38' <= code <= '\x3F':
             # three-octet compact long (-x40000 to x3ffff)
             b2 = (ord(code) - 0x3c) << 16
             b1 = ord(self._read(1)) << 8
             b0 = ord(self._read(1))
             return long(b0 + b1 + b2)
+        elif code in ('\x41', '\x42'):
+            # 8-bit binary data non-final chunk ('A')
+            # 8-bit binary data final chunk ('B')
+            return self._read_binary(code)
         elif code == '\x43':
             # object type definition ('C')
             self._read_class_def()
             return self._read_object()
+        elif code == '\x48':
+            # untyped map ('H')
+            return self._read_map()
         elif code == '\x4A':
             # 64-bit UTC millisecond date ('J')
             return self._read_date()
         elif code == '\x4B':
             # 32-bit UTC minute date ('K')
             return self._read_compact_date()
+        elif code == '\x4D':
+            # map with type ('M')
+            return self._read_map(code)
+        elif code == '\x4F':
+            # object instance ('O')
+            return self._read_class_object(code)
+        elif code == '\x51':
+            # reference to map/list/object - integer ('Q')
+            return self._refs[self._read_object()]
         elif code in ('\x52', '\x53'):
             # utf-8 string non-final chunk ('R')
             # utf-8 string final chunk ('S')
@@ -353,19 +382,22 @@ class ParserV2(ParserV1):
             return self._read_v2_string(code, b0 + b1)
         elif code == '\x55':
             # variable-length list/vector ('U')
-            self._read_list(typed=True, fixed_length=False)
+            return self._read_list(typed=True, fixed_length=False)
         elif code == '\x56':
             # fixed-length list/vector ('V')
-            self._read_list(typed=True, fixed_length=True)
+            return self._read_list(typed=True, fixed_length=True)
         elif code == '\x57':
             # variable-length untyped list/vector ('W')
-            self._read_list(typed=False, fixed_length=False)
+            return self._read_list(typed=False, fixed_length=False)
         elif code == '\x58':
             # fixed-length untyped list/vector ('X')
-            self._read_list(typed=False, fixed_length=True)
+            return self._read_list(typed=False, fixed_length=True)
         elif code == '\x59':
             # long encoded as 32-bit int ('Y')
             return long(unpack('>l', self._read(4))[0])
+        elif code == '\x5A':
+            # list/map terminator ('Z')
+            raise ListMapTerminator()
         elif code == '\x5B':
             # double 0.0
             return 0.0
@@ -374,10 +406,13 @@ class ParserV2(ParserV1):
             return 1.0
         elif code == '\x5D':
             # double byte
-            return float(unpack('<b', self._read(1))[0])
+            return float(unpack('>b', self._read(1))[0])
         elif code == '\x5E':
             # double short
-            return float(unpack('<h', self._read(2))[0])
+            return float(unpack('>h', self._read(2))[0])
+        elif code == '\x5F':
+            # double represented as float
+            return float(unpack('>l', self._read(4))[0] / 1000.0)
         elif '\x60' <= code <= '\x6F':
             # object with direct type
             return self._read_class_object(code)
@@ -394,24 +429,27 @@ class ParserV2(ParserV1):
             return ord(code) - 0x90
         elif '\xC0' <= code <= '\xCF':
             # two-octet compact int (-x800 to x7ff)
-            return 256 * (ord(code) - 0xc8) + int(unpack('<b', self._read(1))[0])
+            return 256 * (ord(code) - 0xc8) + int(unpack('>B', self._read(1))[0])
         elif '\xD0' <= code <= '\xD7':
             # three-octet compact int (-x40000 to x3ffff)
-            b0 = int(unpack('<b', self._read(1))[0])
-            b1 = int(unpack('<b', self._read(1))[0])
+            b1 = int(unpack('>B', self._read(1))[0])
+            b0 = int(unpack('>B', self._read(1))[0])
             return 65536 * (ord(code) - 0xd4) + 256 * b1 + b0
         elif '\xD8' <= code <= '\xEF':
             # one-octet compact long (-x8 to xf, xe0 is 0)
             return long(ord(code) - 0xe0)
         elif '\xF0' <= code <= '\xFF':
             # two-octet compact long (-x800 to x7ff, xf8 is 0)
-            b1 = (ord(code) - 0x80) << 8
+            b1 = (ord(code) - 0xF8) << 8
             b0 = ord(self._read(1))
             return long(b0 + b1)
         else:
             return super(ParserV2, self)._read_object(code)
 
     def _read_list(self, typed=False, fixed_length=False, length=None):
+        if length is 0:
+            return tuple([]) if fixed_length else []
+
         code = self._read(1)
 
         if code in ('t', 'l'):
@@ -440,7 +478,10 @@ class ParserV2(ParserV1):
                 result.append(obj)
                 obj = self._read_object()
 
-        return result
+        if fixed_length:
+            return tuple(result)
+        else:
+            return result
 
     def _read_v2_string(self, code, length):
         if length is 0:
@@ -483,16 +524,22 @@ class ParserV2(ParserV1):
         self._classdefs.append(cls_factory(type_name, fields))
 
     def _read_class_object(self, code):
-        classdef_num = ord(code) - 0x60
+        if code == 'O':
+            classdef_num = self._read_object()
+        else:
+            classdef_num = ord(code) - 0x60
         classdef = self._classdefs[classdef_num]
+        result = classdef()
+        self._refs.append(result)
         field_vals = {}
         for f in classdef._mustaine_field_names:
             field_vals[f] = self._read_object()
-        return classdef(**field_vals)
+        result.__setstate__(field_vals)
+        return result
 
     def _read_compact_date(self):
         minutes = unpack('>l', self._read(4))[0]
-        return datetime.datetime.fromtimestamp(minutes * 60)
+        return datetime.datetime.utcfromtimestamp(minutes * 60)
 
     def _read_compact_string(self, code):
         if code >= '\x30':
@@ -515,3 +562,87 @@ class ParserV2(ParserV1):
             length -= 1
 
         return ''.join(bytes).decode('utf-8')
+
+    def _read_binary(self, code, length=None):
+        if '\x20' <= code <= '\x2F':
+              # binary data length 0-16
+              length = ord(code) - 0x20
+        elif '\x34' <= code <= '\x37':
+              # binary data length 0-1023
+              len_b1 = (ord(code) - 0x34) << 8
+              len_b0 = ord(self._read(1))
+              length = len_b0 + len_b1
+
+        chunks = []
+
+        while True:
+            if length is None:
+                len_bytes = self._read(2)
+                length = unpack('>H', len_bytes)[0]
+            if length == 0:
+                break
+
+            chunks.append(self._read(length))
+
+            if code != 'A':
+                break
+
+            length = None
+            code = self._read(1)
+
+        return Binary(''.join(chunks))
+
+    def _read_map(self, code=None):
+        if code is None:
+            code = self._read(1)
+
+        if code == 't':
+            type_len = unpack('>H', self._read(2))[0]
+            if type_len > 0:
+                # a typed map deserializes to an object
+                result = cls_factory(self._read(type_len))()
+            else:
+                result = {}
+
+            code = self._read(1)
+        else:
+            # untyped maps deserialize to a dict
+            result = {}
+            if code == 'M':
+                # Read and discard type
+                try:
+                    self._read_object()
+                except ListMapTerminator:
+                    code = 'Z'
+                code = self._read(1)
+
+        self._refs.append(result)
+
+        fields = {}
+
+        while code not in ('z', 'Z'):
+            key, value  = self._read_keyval(code)
+
+            if key == {}:
+                return result
+
+            if isinstance(result, Object):
+                fields[str(key)] = value
+            else:
+                fields[key] = value
+
+            code = self._read(1)
+
+        if isinstance(result, Object):
+            result.__setstate__(fields)
+        else:
+            result.update(fields)
+
+        return result
+
+    def _read_keyval(self, first=None):
+        key   = self._read_object(first or self._read(1))
+        code = self._read(1)
+        value = self._read_object(code)
+
+        return key, value

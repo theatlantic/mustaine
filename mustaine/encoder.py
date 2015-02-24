@@ -1,5 +1,5 @@
 import datetime
-import time
+import calendar
 from struct import pack
 
 from types import *
@@ -8,11 +8,11 @@ from mustaine.protocol import *
 # Implementation of Hessian 1.0.2 serialization
 #   see: http://hessian.caucho.com/doc/hessian-1.0-spec.xtp
 
-ENCODERS = {}
+ENCODERS = []
 def encoder_for(data_type):
     def register(f):
         # register function `f` to encode type `data_type`
-        ENCODERS[data_type] = f
+        ENCODERS.append((data_type, f))
         return f
     return register
 
@@ -25,9 +25,12 @@ def returns(data_type):
     return wrap
 
 def encode_object(obj):
-    if type(obj) in ENCODERS:
-        encoder = ENCODERS[type(obj)]
-    else:
+    encoder = None
+    for encoder_type, encoder_func in ENCODERS:
+        if isinstance(obj, encoder_type):
+            encoder = encoder_func
+            break
+    if not encoder:
         raise TypeError("mustaine.encoder cannot serialize %s" % (type(obj),))
 
     return encoder(obj)[1]
@@ -64,7 +67,7 @@ def encode_double(value):
 @encoder_for(datetime.datetime)
 @returns('date')
 def encode_date(value):
-    return pack('>cq', 'd', int(time.mktime(value.timetuple())) * 1000)
+    return pack('>cq', 'd', int(calendar.timegm(value.timetuple())) * 1000)
 
 @encoder_for(StringType)
 @returns('string')
@@ -124,12 +127,12 @@ def encode_map(obj):
 
 @encoder_for(Object)
 def encode_mobject(obj):
-    encoded  = pack('>cH', 't', len(obj._meta_type)) + obj._meta_type
+    obj_type = '.'.join([type(obj).__module__, type(obj).__name__])
+    encoded  = pack('>cH', 't', len(obj_type)) + obj_type
     members  = obj.__getstate__()
-    del members['__meta_type'] # this is here for pickling. we don't want or need it
 
     encoded += ''.join(map(encode_keyval, members.items()))
-    return (obj._meta_type.rpartition('.')[2], pack('>c', 'M') + encoded + 'z')
+    return (type(obj).__name__, pack('>c', 'M') + encoded + 'z')
 
 @encoder_for(Remote)
 @returns('remote')
@@ -169,9 +172,12 @@ def encode_call(call):
 
     # TODO: this is mostly duplicated at the top of the file in encode_object. dedup
     for arg in call.args:
-        if type(arg) in ENCODERS:
-            encoder = ENCODERS[type(arg)]
-        else:
+        encoder = None
+        for encoder_type, encoder_func in ENCODERS:
+            if isinstance(arg, encoder_type):
+                encoder = encoder_func
+                break
+        if not encoder:
             raise TypeError("mustaine.encoder cannot serialize %s" % (type(arg),))
 
         data_type, arg = encoder(arg)
