@@ -1,19 +1,12 @@
-import unittest
 import datetime
 
 from mustaine import protocol
-from mustaine.client import HessianProxy
+from .base import HessianTestCase
 
 # Caucho's Hessian 2.0 reference service
 # interface: http://caucho.com/resin-javadoc/com/caucho/hessian/test/TestHessian2.html
 
-class EncoderTestCase(unittest.TestCase):
-
-    def get_client(self, cls=HessianProxy):
-        return cls("http://hessian.caucho.com/test/test", version=2)
-
-    def setUp(self):
-        self.client = self.get_client()
+class EncoderTestCase(HessianTestCase):
 
     def test_encode_binary_0(self):
         arg = protocol.Binary("")
