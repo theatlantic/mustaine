@@ -1,8 +1,10 @@
-from httplib import HTTPConnection, HTTPSConnection
-from urlparse import urlparse
+from six.moves.http_client import HTTPConnection, HTTPSConnection
+from six.moves.urllib.parse import urlparse
 from warnings import warn
 import base64
 import sys
+
+import six
 
 from mustaine.encoder import encode_object
 from mustaine.parser import Parser
@@ -36,23 +38,24 @@ class HessianProxy(object):
 
         if sys.version_info < (2,6):
             warn('HessianProxy timeout not enforceable before Python 2.6', RuntimeWarning, stacklevel=2)
-            timeout = {}
+            kwargs = {}
         else:
-            timeout = {'timeout': timeout}
+            kwargs = {'timeout': timeout}
+
+        if six.PY2:
+            kwargs['strict'] = True
 
         self._uri = urlparse(service_uri)
         if self._uri.scheme == 'http':
             self._client = HTTPConnection(self._uri.hostname,
                                           self._uri.port or 80,
-                                          strict=True,
-                                          **timeout)
+                                          **kwargs)
         elif self._uri.scheme == 'https':
             self._client = HTTPSConnection(self._uri.hostname,
                                            self._uri.port or 443,
                                            key_file=key_file,
                                            cert_file=cert_file,
-                                           strict=True,
-                                           **timeout)
+                                           **kwargs)
         else:
             raise NotImplementedError("HessianProxy only supports http:// and https:// URIs")
 
@@ -95,7 +98,7 @@ class HessianProxy(object):
             request = encode_object(Call(method, args, overload=self._overload, version=self.version))
             self._client.putheader("Content-Length", str(len(request)))
             self._client.endheaders()
-            self._client.send(str(request))
+            self._client.send(six.binary_type(request))
 
             response = self._client.getresponse()
             if response.status != 200:

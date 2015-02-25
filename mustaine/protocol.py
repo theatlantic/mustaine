@@ -1,4 +1,5 @@
 import copy
+import six
 
 # transparent types used for hessian serialization
 # objects of this type can appear on the wire but have no native python type
@@ -141,14 +142,13 @@ class ObjectMeta(type):
         return cls_type_name == other_type_name
 
 
+@six.add_metaclass(ObjectMeta)
 class Object(object):
-
-    __metaclass__ = ObjectMeta
 
     def __init__(self, *args, **kwargs):
         for f, arg in zip(self._mustaine_field_names, args):
             setattr(self, f, arg)
-        for f, arg in kwargs.iteritems():
+        for f, arg in six.iteritems(kwargs):
             setattr(self, f, arg)
 
     def __repr__(self):
@@ -162,7 +162,7 @@ class Object(object):
         return self.__repr__()
 
     def __getstate__(self):
-        obj_dict = copy.deepcopy(self.__dict__)
+        obj_dict = self.__dict__.copy()
         obj_dict.pop('_mustaine_factory_args', None)
         obj_dict.pop('_mustaine_field_names', None)
         return obj_dict
@@ -185,11 +185,15 @@ def cls_factory(name, fields=None, bases=None, attrs=None):
     fields = fields or []
 
     for i, f in enumerate(fields):
-        if isinstance(f, unicode):
+        if six.PY2 and isinstance(f, unicode):
             fields[i] = f.encode('utf-8')
+        elif six.PY3 and isinstance(f, six.binary_type):
+            fields[i] = f.decode('utf-8')
 
-    if isinstance(name, unicode):
+    if six.PY2 and isinstance(name, unicode):
         name = name.encode('utf-8')
+    elif six.PY3 and isinstance(name, six.binary_type):
+        name = name.decode('utf-8')
 
     module_name, _, cls_name = name.rpartition('.')
 

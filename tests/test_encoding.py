@@ -1,6 +1,9 @@
 import datetime
 
+import six
+
 from mustaine import protocol
+from mustaine.utils.data_types import long
 from .base import HessianTestCase
 
 # Caucho's Hessian 2.0 reference service
@@ -9,49 +12,49 @@ from .base import HessianTestCase
 class EncoderTestCase(HessianTestCase):
 
     def test_encode_binary_0(self):
-        arg = protocol.Binary("")
+        arg = protocol.Binary(b"")
         response = self.client.argBinary_0(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_binary_1(self):
-        arg = protocol.Binary("0")
+        arg = protocol.Binary(b"0")
         response = self.client.argBinary_1(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def get_arg_str_1024(self):
         arg_str = ""
-        for i in xrange(0, 16):
+        for i in range(0, 16):
             arg_str += "%d%d%s" % (
                 i // 10, i % 10, " 456789012345678901234567890123456789012345678901234567890123\n")
         return arg_str[:1024]
 
     def get_arg_str_65536(self):
         arg_str = ""
-        for i in xrange(0, 64 * 16):
+        for i in range(0, 64 * 16):
             arg_str += "%d%d%d%s" % (
                 i // 100, (i // 10) % 10, i % 10, " 56789012345678901234567890123456789012345678901234567890123\n")
         return arg_str[:65536]
 
     def test_encode_binary_1023(self):
-        arg = protocol.Binary(self.get_arg_str_1024()[:1023])
+        arg = protocol.Binary(six.b(self.get_arg_str_1024()[:1023]))
         response = self.client.argBinary_1023(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_binary_1024(self):
-        arg = protocol.Binary(self.get_arg_str_1024()[:1024])
+        arg = protocol.Binary(six.b(self.get_arg_str_1024()[:1024]))
         response = self.client.argBinary_1024(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_binary_15(self):
-        response = self.client.argBinary_15(protocol.Binary("012345678901234"))
+        response = self.client.argBinary_15(protocol.Binary(b"012345678901234"))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_binary_16(self):
-        response = self.client.argBinary_16(protocol.Binary("0123456789012345"))
+        response = self.client.argBinary_16(protocol.Binary(b"0123456789012345"))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_binary_65536(self):
-        arg = protocol.Binary(self.get_arg_str_65536())
+        arg = protocol.Binary(six.b(self.get_arg_str_65536()))
         response = self.client.argBinary_65536(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
@@ -69,7 +72,7 @@ class EncoderTestCase(HessianTestCase):
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_double_0_0(self):
-    	response = self.client.argDouble_0_0(0.0)
+        response = self.client.argDouble_0_0(0.0)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_double_0_001(self):
@@ -189,75 +192,75 @@ class EncoderTestCase(HessianTestCase):
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0(self):
-        response = self.client.argLong_0(0L)
+        response = self.client.argLong_0(long(0))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x10(self):
-        response = self.client.argLong_0x10(0x10L)
+        response = self.client.argLong_0x10(long(0x10))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x3ffff(self):
-        response = self.client.argLong_0x3ffff(0x3ffffL)
+        response = self.client.argLong_0x3ffff(long(0x3ffff))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x40000(self):
-        response = self.client.argLong_0x40000(0x40000L)
+        response = self.client.argLong_0x40000(long(0x40000))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x7ff(self):
-        response = self.client.argLong_0x7ff(0x7ffL)
+        response = self.client.argLong_0x7ff(long(0x7ff))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x7fffffff(self):
-        response = self.client.argLong_0x7fffffff(0x7fffffffL)
+        response = self.client.argLong_0x7fffffff(long(0x7fffffff))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x800(self):
-        response = self.client.argLong_0x800(0x800L)
+        response = self.client.argLong_0x800(long(0x800))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_0x80000000(self):
-        response = self.client.argLong_0x80000000(0x80000000L)
+        response = self.client.argLong_0x80000000(long(0x80000000))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_1(self):
-        response = self.client.argLong_1(1L)
+        response = self.client.argLong_1(long(1))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_15(self):
-        response = self.client.argLong_15(15L)
+        response = self.client.argLong_15(long(15))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x40000(self):
-        response = self.client.argLong_m0x40000(-0x40000L)
+        response = self.client.argLong_m0x40000(long(-0x40000))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x40001(self):
-        response = self.client.argLong_m0x40001(-0x40001L)
+        response = self.client.argLong_m0x40001(long(-0x40001))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x800(self):
-        response = self.client.argLong_m0x800(-0x800L)
+        response = self.client.argLong_m0x800(long(-0x800))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x80000000(self):
-        response = self.client.argLong_m0x80000000(-0x80000000L)
+        response = self.client.argLong_m0x80000000(long(-0x80000000))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x80000001(self):
-        response = self.client.argLong_m0x80000001(-0x80000001L)
+        response = self.client.argLong_m0x80000001(long(-0x80000001))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m0x801(self):
-        response = self.client.argLong_m0x801(-0x801L)
+        response = self.client.argLong_m0x801(long(-0x801))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m8(self):
-        response = self.client.argLong_m8(-8L)
+        response = self.client.argLong_m8(long(-8))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_long_m9(self):
-        response = self.client.argLong_m9(-9L)
+        response = self.client.argLong_m9(long(-9))
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_null(self):

@@ -1,18 +1,22 @@
 import functools
 import datetime
 import calendar
+import operator
 from struct import pack
 
-from types import NoneType
+import six
+from six.moves import reduce
+
 from mustaine.protocol import Call, Object, Remote, Binary
 
 from .utils import toposort
+from .utils.data_types import long
 
 # Implementation of Hessian 1.0.2 serialization
 #   see: http://hessian.caucho.com/doc/hessian-1.0-spec.xtp
 
 RETURN_TYPES = {
-    NoneType: 'null',
+    type(None): 'null',
     bool: 'bool',
     int: 'int',
     long: 'long',
@@ -22,7 +26,7 @@ RETURN_TYPES = {
     Remote: 'remote',
     Call: 'call',
     str: 'string',
-    unicode: 'string',
+    six.text_type: 'string',
     list: 'list',
     tuple: 'list',
     dict: 'map',
@@ -78,7 +82,7 @@ def sort_mro(encoders):
     """
     type_encoders = dict([[e.data_type, e] for e in encoders])
     mro_dict = dict([[k, set(k.mro()[1:])] for k in type_encoders.keys()])
-    sorted_classes = reversed(toposort.toposort_flatten(mro_dict))
+    sorted_classes = reversed(toposort.toposort_flatten(mro_dict, sort=False))
     return [type_encoders[cls] for cls in sorted_classes if cls in type_encoders]
 
 
@@ -89,16 +93,15 @@ class EncoderBase(type):
         for base in bases:
             if hasattr(base, '_mustaine_encoders'):
                 encoders.extend(base._mustaine_encoders)
-        for k, v in attrs.iteritems():
+        for k, v in six.iteritems(attrs):
             if isinstance(v, encoder_method_wrapper):
                 encoders.append(v)
         attrs['_mustaine_encoders'] = sort_mro(encoders)
         return super(EncoderBase, cls).__new__(cls, name, bases, attrs)
 
 
+@six.add_metaclass(EncoderBase)
 class Encoder(object):
-
-    __metaclass__ = EncoderBase
 
     def _encode(self, obj):
         encoder = None
@@ -116,7 +119,7 @@ class Encoder(object):
     def encode_arg(self, obj):
         return self._encode(obj)
 
-    @encoder_for(NoneType)
+    @encoder_for(type(None))
     def encode_null(self, _):
         return 'N'
 
@@ -129,23 +132,36 @@ class Encoder(object):
 
     @encoder_for(int)
     def encode_int(self, value):
-        return pack('>cl', 'I', value)
+        return pack('>cl', b'I', value)
 
     @encoder_for(long)
     def encode_long(self, value):
-        return pack('>cq', 'L', value)
+        return pack('>cq', b'L', value)
 
     @encoder_for(float)
     def encode_double(self, value):
-        return pack('>cd', 'D', value)
+        return pack('>cd', b'D', value)
 
     @encoder_for(datetime.datetime)
     def encode_date(self, value):
-        return pack('>cq', 'd', int(calendar.timegm(value.timetuple())) * 1000)
+        return pack('>cq', b'd', int(calendar.timegm(value.timetuple())) * 1000)
+
+    @encoder_for(six.text_type)
+    def encode_unicode(self, value):
+        encoded = b''
+
+        while len(value) > 65535:
+            encoded += pack('>cH', b's', 65535)
+            encoded += value[:65535].encode('utf-8')
+            value    = value[65535:]
+
+        encoded += pack('>cH', b'S', len(value))
+        encoded += value.encode('utf-8')
+        return encoded
 
     @encoder_for(str)
     def encode_string(self, value):
-        encoded = ''
+        encoded = b''
 
         try:
             value = value.encode('ascii')
@@ -156,69 +172,58 @@ class Encoder(object):
                 "Binary or unicode objects instead")
 
         while len(value) > 65535:
-            encoded += pack('>cH', 's', 65535)
+            encoded += pack('>cH', b's', 65535)
             encoded += value[:65535]
             value    = value[65535:]
 
-        encoded += pack('>cH', 'S', len(value.decode('utf-8')))
+        encoded += pack('>cH', b'S', len(value.decode('utf-8')))
         encoded += value
-        return encoded
-
-    @encoder_for(unicode)
-    def encode_unicode(self, value):
-        encoded = ''
-
-        while len(value) > 65535:
-            encoded += pack('>cH', 's', 65535)
-            encoded += value[:65535].encode('utf-8')
-            value    = value[65535:]
-
-        encoded += pack('>cH', 'S', len(value))
-        encoded += value.encode('utf-8')
         return encoded
 
     @encoder_for(list)
     def encode_list(self, obj):
-        encoded = ''.join(map(self.encode, obj))
-        return pack('>2cl', 'V', 'l', -1) + encoded + 'z'
+        encoded = reduce(operator.add, map(self.encode, obj), b'')
+        return pack('>2cl', b'V', b'l', -1) + encoded + b'z'
 
     @encoder_for(tuple)
     def encode_tuple(self, obj):
-        encoded = ''.join(map(self.encode, obj))
-        return pack('>2cl', 'V', 'l', len(obj)) + encoded + 'z'
+        encoded = reduce(operator.add, map(self.encode, obj), b'')
+        return pack('>2cl', b'V', b'l', len(obj)) + encoded + b'z'
 
     def encode_keyval(self, pair):
-        return ''.join((self.encode(pair[0]), self.encode(pair[1])))
+        return self.encode(pair[0]) + self.encode(pair[1])
 
     @encoder_for(dict)
     def encode_map(self, obj):
-        encoded = ''.join(map(self.encode_keyval, obj.items()))
-        return pack('>c', 'M') + encoded + 'z'
+        keyvals = map(self.encode_keyval, obj.items())
+        encoded = reduce(operator.add, keyvals, b'')
+        return pack('>c', b'M') + encoded + b'z'
 
     @encoder_for(Object)
     def encode_mobject(self, obj):
         obj_type = '.'.join([type(obj).__module__, type(obj).__name__])
-        encoded  = pack('>cH', 't', len(obj_type)) + obj_type
+        encoded  = pack('>cH', b't', len(obj_type)) + six.b(obj_type)
         members  = obj.__getstate__()
-        encoded += ''.join(map(self.encode_keyval, members.items()))
-        return (type(obj).__name__, pack('>c', 'M') + encoded + 'z')
+        keyvals = map(self.encode_keyval, members.items())
+        encoded += reduce(operator.add, keyvals, b'')
+        return (type(obj).__name__, pack('>c', b'M') + encoded + b'z')
 
     @encoder_for(Remote)
     def encode_remote(self, obj):
         encoded = self.encode_string(obj.url)
-        return pack('>2cH', 'r', 't', len(obj.type_name)) + obj.type_name + encoded
+        return pack('>2cH', b'r', b't', len(obj.type_name)) + obj.type_name + encoded
 
     @encoder_for(Binary)
     def encode_binary(self, obj):
-        encoded = ''
+        encoded = b''
         value   = obj.value
 
         while len(value) > 65535:
-            encoded += pack('>cH', 'b', 65535)
+            encoded += pack('>cH', b'b', 65535)
             encoded += value[:65535]
             value    = value[65535:]
 
-        encoded += pack('>cH', 'B', len(value))
+        encoded += pack('>cH', b'B', len(value))
         encoded += value
 
         return encoded
@@ -226,33 +231,35 @@ class Encoder(object):
     @encoder_for(Call)
     def encode_call(self, call):
         method    = call.method
-        headers   = ''
-        arguments = ''
+        headers   = b''
+        arguments = b''
 
         for header,value in call.headers.items():
             if not isinstance(header, str):
                 raise TypeError("Call header keys must be strings")
 
-            headers += pack('>cH', 'H', len(header)) + header
+            headers += pack('>cH', b'H', len(header)) + header
             headers += self.encode(value)
 
         for arg in call.args:
             data_type, arg = self.encode_arg(arg)
             if call.overload:
-                method    += '_' + data_type
+                method    += b'_' + six.b(data_type)
+            if isinstance(arg, six.text_type):
+                arg = six.b(arg)
             arguments += arg
 
-        encoded  = pack('>cBB', 'c', call.version, 0)
+        encoded  = pack('>cBB', b'c', call.version, 0)
         encoded += headers
-        encoded += pack('>cH', 'm', len(method)) + method
+        encoded += pack('>cH', b'm', len(method)) + six.b(method)
         encoded += arguments
-        encoded += 'z'
+        encoded += b'z'
 
         return encoded
 
 
-encoder = Encoder()
 
 
 def encode_object(obj):
+    encoder = Encoder()
     return encoder.encode(obj)
