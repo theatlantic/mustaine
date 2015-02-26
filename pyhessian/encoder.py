@@ -10,7 +10,7 @@ from six.moves import reduce
 from pyhessian.protocol import Call, Object, Remote, Binary
 
 from .utils import toposort
-from .utils.data_types import long
+from .data_types import long
 
 # Implementation of Hessian 1.0.2 serialization
 #   see: http://hessian.caucho.com/doc/hessian-1.0-spec.xtp

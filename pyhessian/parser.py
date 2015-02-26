@@ -14,7 +14,7 @@ from six.moves import reduce
 from pyhessian.protocol import (
     Call, Reply, Fault, Binary, Remote, Object, cls_factory)
 
-from .utils.data_types import long
+from .data_types import long
 
 
 class ParseError(Exception):
