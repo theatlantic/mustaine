@@ -103,6 +103,9 @@ class EncoderBase(type):
 @six.add_metaclass(EncoderBase)
 class Encoder(object):
 
+    def __init__(self):
+        self._refs = []
+
     def _encode(self, obj):
         encoder = None
         for e in self._mustaine_encoders:
@@ -112,6 +115,17 @@ class Encoder(object):
         if not encoder:
             raise TypeError("mustaine.encoder cannot serialize %s" % (type(obj),))
         return encoder(self, obj)
+
+    def add_ref(self, obj):
+        """
+        Add an object to the reference list. Returns None if the object
+        has not yet been referenced, or the encoding of the reference
+        if it has.
+        """
+        if id(obj) in self._refs:
+            return pack('>cl', b'R', self._refs.index(id(obj)))
+
+        self._refs.append(id(obj))
 
     def encode(self, obj):
         return self._encode(obj)[1]
@@ -182,11 +196,17 @@ class Encoder(object):
 
     @encoder_for(list)
     def encode_list(self, obj):
+        ref = self.add_ref(obj)
+        if ref:
+            return ref
         encoded = reduce(operator.add, map(self.encode, obj), b'')
         return pack('>2cl', b'V', b'l', -1) + encoded + b'z'
 
     @encoder_for(tuple)
     def encode_tuple(self, obj):
+        ref = self.add_ref(obj)
+        if ref:
+            return ref
         encoded = reduce(operator.add, map(self.encode, obj), b'')
         return pack('>2cl', b'V', b'l', len(obj)) + encoded + b'z'
 
@@ -195,12 +215,18 @@ class Encoder(object):
 
     @encoder_for(dict)
     def encode_map(self, obj):
+        ref = self.add_ref(obj)
+        if ref:
+            return ref
         keyvals = map(self.encode_keyval, obj.items())
         encoded = reduce(operator.add, keyvals, b'')
         return pack('>c', b'M') + encoded + b'z'
 
     @encoder_for(Object)
     def encode_mobject(self, obj):
+        ref = self.add_ref(obj)
+        if ref:
+            return (type(obj).__name__, ref)
         obj_type = '.'.join([type(obj).__module__, type(obj).__name__])
         encoded  = pack('>cH', b't', len(obj_type)) + six.b(obj_type)
         members  = obj.__getstate__()
@@ -210,6 +236,9 @@ class Encoder(object):
 
     @encoder_for(Remote)
     def encode_remote(self, obj):
+        ref = self.add_ref(obj)
+        if ref:
+            return ref
         encoded = self.encode_string(obj.url)
         return pack('>2cH', b'r', b't', len(obj.type_name)) + obj.type_name + encoded
 

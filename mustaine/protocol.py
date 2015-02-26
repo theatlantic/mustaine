@@ -174,8 +174,11 @@ class Object(object):
         return (object_factory, self._mustaine_factory_args, self.__dict__)
 
     def __eq__(self, other):
-        return (isinstance(other, self.__class__)
-            and self.__getstate__() == other.__getstate__())
+        if not isinstance(other, self.__class__):
+            return False
+
+        from mustaine.encoder import encode_object
+        return encode_object(self) == encode_object(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)

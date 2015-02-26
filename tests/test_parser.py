@@ -54,7 +54,6 @@ class ParserV1TestCase(HessianTestCase):
     # def test_parse_binary_65536(self):
     #     expected = protocol.Binary(self.get_reply_str_65536())
     #     reply = self.client.replyBinary_65536()
-    #     import ipdb; ipdb.set_trace()
     #     self.assertEqual(expected, reply)
 
     def test_parse_date_0(self):
@@ -370,11 +369,11 @@ class ParserV1TestCase(HessianTestCase):
         reply = self.client.replyObject_2b()
         self.assertEqual(expected, reply)
 
-    # def test_parse_object_3(self):
-    #     expected = protocol.object_factory('com.caucho.hessian.test.TestCons', _first='a', _rest=None)
-    #     expected._rest = expected
-    #     reply = self.client.replyObject_3()
-    #     self.assertEqual(expected, reply)
+    def test_parse_object_3(self):
+        expected = protocol.object_factory('com.caucho.hessian.test.TestCons', _first='a', _rest=None)
+        expected._rest = expected
+        reply = self.client.replyObject_3()
+        self.assertEqual(expected, reply)
 
     def test_parse_string_0(self):
         expected = ""

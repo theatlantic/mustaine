@@ -327,12 +327,12 @@ class EncoderTestCase(HessianTestCase):
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     ### argObject_3 causes a stack pop. BOOM, recursion.
-    # def disabled_test_encode_object_3(self):
-    #     payload = protocol.object_factory('com.caucho.hessian.test.TestCons', _first = 'a', _rest = None)
-    #     payload._rest = payload
-    #
-    #     response = self.client.argObject_3(payload)
-    #     self.assertEqual(response, True, "Debug response: %s" % response)
+    def test_encode_object_3(self):
+        payload = protocol.object_factory('com.caucho.hessian.test.TestCons', _first = 'a', _rest = None)
+        payload._rest = payload
+    
+        response = self.client.argObject_3(payload)
+        self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_string_0(self):
         response = self.client.argString_0("")
