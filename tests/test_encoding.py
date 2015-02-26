@@ -2,8 +2,8 @@ import datetime
 
 import six
 
-from mustaine import protocol
-from mustaine.utils.data_types import long
+from pyhessian import protocol
+from pyhessian.utils.data_types import long
 from .base import HessianTestCase
 
 # Caucho's Hessian 2.0 reference service

@@ -7,7 +7,7 @@ from struct import pack
 import six
 from six.moves import reduce
 
-from mustaine.protocol import Call, Object, Remote, Binary
+from pyhessian.protocol import Call, Object, Remote, Binary
 
 from .utils import toposort
 from .utils.data_types import long
@@ -91,12 +91,12 @@ class EncoderBase(type):
     def __new__(cls, name, bases, attrs):
         encoders = []
         for base in bases:
-            if hasattr(base, '_mustaine_encoders'):
-                encoders.extend(base._mustaine_encoders)
+            if hasattr(base, '_hessian_encoders'):
+                encoders.extend(base._hessian_encoders)
         for k, v in six.iteritems(attrs):
             if isinstance(v, encoder_method_wrapper):
                 encoders.append(v)
-        attrs['_mustaine_encoders'] = sort_mro(encoders)
+        attrs['_hessian_encoders'] = sort_mro(encoders)
         return super(EncoderBase, cls).__new__(cls, name, bases, attrs)
 
 
@@ -108,12 +108,12 @@ class Encoder(object):
 
     def _encode(self, obj):
         encoder = None
-        for e in self._mustaine_encoders:
+        for e in self._hessian_encoders:
             if isinstance(obj, e.data_type):
                 encoder = e
                 break
         if not encoder:
-            raise TypeError("mustaine.encoder cannot serialize %s" % (type(obj),))
+            raise TypeError("pyhessian.encoder cannot serialize %s" % (type(obj),))
         return encoder(self, obj)
 
     def add_ref(self, obj):
@@ -181,7 +181,7 @@ class Encoder(object):
             value = value.encode('ascii')
         except UnicodeDecodeError:
             raise TypeError(
-                "mustaine.encoder cowardly refuses to guess the encoding for "
+                "pyhessian.encoder cowardly refuses to guess the encoding for "
                 "string objects containing bytes out of range 0x00-0x79; use "
                 "Binary or unicode objects instead")
 

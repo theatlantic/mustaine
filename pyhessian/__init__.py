@@ -1,5 +1,7 @@
 # Copyright (c) 2010, Brandon Gilmore
 # Copyright (c) 2010, Phill Tornroth
+# Copyright (c) 2015, Frankie Dintino
+#
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,6 +29,5 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-version_info = (0, 1, 7)
+version_info = (0, 9, 0)
 __version__ =  ".".join(map(str, version_info))
-

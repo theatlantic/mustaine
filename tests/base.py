@@ -5,7 +5,7 @@ import unittest
 import select
 from threading import Timer
 
-from mustaine.client import HessianProxy
+from pyhessian.client import HessianProxy
 
 
 SUPPORT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support'))

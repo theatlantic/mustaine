@@ -1,25 +1,31 @@
 About
 -----
 
-Mustaine is a Python implemention of the `Hessian 1.0.2 specification
-<http://hessian.caucho.com/doc/hessian-1.0-spec.xtp>`_, a binary web services
-protocol. The library currently provides a standard HTTP-based client as well
-as a general-purpose serialization library. Server support is planned.
+**python-hessian** is a Python implemention of Hessian, a binary web services
+protocol. It supports the `Hessian 1.0.2 specification
+<http://hessian.caucho.com/doc/hessian-1.0-spec.xtp>`_ and the
+`Hessian 2.0 Serialization Protocol
+<http://hessian.caucho.com/doc/hessian-serialization.html>`_. The library
+is a fork of `mustaine <https://github.com/bgilmore/mustaine>`_, which is no
+longer maintained. The library currently provides a standard HTTP-based client
+as well as a general-purpose serialization library.
 
 Usage
 -----
 
-Using `mustaine.client`
+Using `pyhessian.client`
 +++++++++++++++++++++++
 
-Testing against `Caucho <http://hessian.caucho.com/>`_'s reference service::
+Testing against `Caucho <http://hessian.caucho.com/>`_'s reference service:
 
-  from mustaine.client import HessianProxy
-  service = HessianProxy("http://hessian.caucho.com/test/test")
-  print service.replyDate_1()
+.. code-block:: python
+
+   from pyhessian.client import HessianProxy
+   service = HessianProxy("http://hessian.caucho.com/test/test")
+   print service.replyDate_1()
 
 Source
 ------
 
-Up-to-date sources and documentation can always be found at the `mustaine
-GitHub site <http://github.com/bgilmore/mustaine>`_.
+Up-to-date sources and documentation can always be found at the `python-hessian
+GitHub site <http://github.com/theatlantic/python-hessian>`_.

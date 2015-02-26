@@ -6,11 +6,11 @@ import sys
 
 import six
 
-from mustaine.encoder import encode_object
-from mustaine.parser import Parser
-from mustaine.protocol import Call, Fault
-from mustaine._util import BufferedReader
-from mustaine import __version__
+from pyhessian.encoder import encode_object
+from pyhessian.parser import Parser
+from pyhessian.protocol import Call, Fault
+from pyhessian._util import BufferedReader
+from pyhessian import __version__
 
 
 class ProtocolError(Exception):
@@ -33,7 +33,7 @@ class HessianProxy(object):
         self.version = version
 
         self._headers = list()
-        self._headers.append(('User-Agent', 'mustaine/' + __version__,))
+        self._headers.append(('User-Agent', 'pyhessian/' + __version__,))
         self._headers.append(('Content-Type', 'application/x-hessian',))
 
         if sys.version_info < (2,6):
@@ -84,7 +84,7 @@ class HessianProxy(object):
         return self.__RemoteMethod(self, method)
 
     def __repr__(self):
-        return "<mustaine.client.HessianProxy(\"%s\")>" % (self._uri.geturl(),)
+        return "<pyhessian.client.HessianProxy(\"%s\")>" % (self._uri.geturl(),)
 
     def __str__(self):
         return self.__repr__()

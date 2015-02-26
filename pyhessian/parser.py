@@ -11,7 +11,7 @@ except ImportError:
 
 from six.moves import reduce
 
-from mustaine.protocol import (
+from pyhessian.protocol import (
     Call, Reply, Fault, Binary, Remote, Object, cls_factory)
 
 from .utils.data_types import long
@@ -539,7 +539,7 @@ class ParserV2(ParserV1):
         result = classdef()
         self._refs.append(result)
         field_vals = {}
-        for f in classdef._mustaine_field_names:
+        for f in classdef._hessian_field_names:
             field_vals[f] = self._read_object()
         result.__setstate__(field_vals)
         return result

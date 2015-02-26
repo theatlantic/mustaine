@@ -1,12 +1,12 @@
 import os, sys
 from setuptools import find_packages, setup
-from mustaine import __version__
+from pyhessian import __version__
 
-if sys.version_info < (2,6):
-    raise NotImplementedError("mustaine requires Python 2.6 or later")
+if sys.version_info < (2, 7):
+    raise NotImplementedError("python-hessian requires Python 2.7 or later")
 
 setup(
-    name = "mustaine",
+    name = "python-hessian",
     version = __version__,
     description = "Hessian RPC Library",
     long_description = open(
@@ -26,10 +26,10 @@ setup(
         'Topic :: Software Development :: Libraries',
     ],
 
-    url = "http://github.com/bgilmore/mustaine",
+    url = "https://github.com/theatlantic/python-hessian",
 
-    author = "Brandon Gilmore",
-    author_email = "brandon@mg2.org",
+    author = "Frankie Dintino",
+    author_email = "fdintino@theatlantic.com",
     license = "BSD",
 
     platforms = "any",

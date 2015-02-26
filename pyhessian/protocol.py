@@ -101,7 +101,7 @@ class Fault(Exception):
     message = property(_get_message, _set_message)
 
     def __repr__(self):
-        return "<mustaine.protocol.Fault: \"%s: %s\">" % (self.code, self.message,)
+        return "<pyhessian.protocol.Fault: \"%s: %s\">" % (self.code, self.message,)
 
     def __str__(self):
         return self.__repr__()
@@ -136,7 +136,7 @@ class ObjectMeta(type):
         if Object not in other.__class__.__mro__:
             return False
         cls_type_name = '.'.join([cls.__module__, cls.__name__])
-        if cls_type_name == 'mustaine.protocol.Object':
+        if cls_type_name == 'pyhessian.protocol.Object':
             return True
         other_type_name = '.'.join([type(other).__module__, type(other).__name__])
         return cls_type_name == other_type_name
@@ -146,7 +146,7 @@ class ObjectMeta(type):
 class Object(object):
 
     def __init__(self, *args, **kwargs):
-        for f, arg in zip(self._mustaine_field_names, args):
+        for f, arg in zip(self._hessian_field_names, args):
             setattr(self, f, arg)
         for f, arg in six.iteritems(kwargs):
             setattr(self, f, arg)
@@ -163,21 +163,21 @@ class Object(object):
 
     def __getstate__(self):
         obj_dict = self.__dict__.copy()
-        obj_dict.pop('_mustaine_factory_args', None)
-        obj_dict.pop('_mustaine_field_names', None)
+        obj_dict.pop('_hessian_factory_args', None)
+        obj_dict.pop('_hessian_field_names', None)
         return obj_dict
 
     def __setstate__(self, obj_dict):
         self.__dict__.update(obj_dict)
 
     def __reduce__(self):
-        return (object_factory, self._mustaine_factory_args, self.__dict__)
+        return (object_factory, self._hessian_factory_args, self.__dict__)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
 
-        from mustaine.encoder import encode_object
+        from pyhessian.encoder import encode_object
         return encode_object(self) == encode_object(other)
 
     def __ne__(self, other):
@@ -202,8 +202,8 @@ def cls_factory(name, fields=None, bases=None, attrs=None):
 
     bases = bases or tuple()
     cls_attrs.update({
-        '_mustaine_field_names': fields,
-        '_mustaine_factory_args': (name, fields, bases, attrs),
+        '_hessian_field_names': fields,
+        '_hessian_factory_args': (name, fields, bases, attrs),
     })
 
     if module_name:
