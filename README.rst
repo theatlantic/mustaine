@@ -7,16 +7,16 @@ protocol. It supports the `Hessian 1.0.2 specification
 `Hessian 2.0 Serialization Protocol
 <http://hessian.caucho.com/doc/hessian-serialization.html>`_. The library
 is a fork of `mustaine <https://github.com/bgilmore/mustaine>`_, which is no
-longer maintained. The library currently provides a standard HTTP-based client
+longer maintained. It provides a standard HTTP-based client
 as well as a general-purpose serialization library.
 
 Usage
 -----
 
-Using `pyhessian.client`
-+++++++++++++++++++++++
+Using ``pyhessian.client``
+..........................
 
-Testing against `Caucho <http://hessian.caucho.com/>`_'s reference service:
+Testing against `Caucho’s <http://hessian.caucho.com/>`_ reference service:
 
 .. code-block:: python
 
@@ -28,4 +28,4 @@ Source
 ------
 
 Up-to-date sources and documentation can always be found at the `python-hessian
-GitHub site <http://github.com/theatlantic/python-hessian>`_.
+GitHub site <https://github.com/theatlantic/python-hessian>`_.
