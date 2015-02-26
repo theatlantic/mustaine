@@ -33,7 +33,7 @@ class HessianProxy(object):
         self.version = version
 
         self._headers = list()
-        self._headers.append(('User-Agent', 'pyhessian/' + __version__,))
+        self._headers.append(('User-Agent', 'python-hessian/' + __version__,))
         self._headers.append(('Content-Type', 'application/x-hessian',))
 
         if sys.version_info < (2,6):
