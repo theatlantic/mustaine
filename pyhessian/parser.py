@@ -338,16 +338,12 @@ class ParserV2(ParserV1):
             return self._read_compact_string(code)
         elif b'\x20' <= code <= b'\x2F':
             # binary data length 0-16
-            # length = ord(code) - 0x20
             return self._read_binary(code)
         elif b'\x30' <= code <= b'\x33':
             # utf-8 string length 0-1023
             return self._read_compact_string(code)
         elif b'\x34' <= code <= b'\x37':
             # binary data length 0-1023
-            # len_b1 = (ord(code) - 0x34) << 8
-            # len_b0 = ord(self._read(1))
-            # length = len_b0 + len_b1
             return self._read_binary(code)
         elif b'\x38' <= code <= b'\x3F':
             # three-octet compact long (-x40000 to x3ffff)
