@@ -155,7 +155,7 @@ class ParserV1(object):
     def __init__(self, base_parser):
         self._base_parser = base_parser
         self._classdefs = []
-        self._refs   = []
+        self._refs = []
 
     def _read(self, n):
         return self._base_parser._read(n)
@@ -179,7 +179,7 @@ class ParserV1(object):
             return self._read_date()
         elif code == b's' or code == b'x':
             fragment = self._read_string()
-            next     = self._read(1)
+            next = self._read(1)
             if next.lower() == code:
                 return fragment + self._read_object(next)
             else:
@@ -188,7 +188,7 @@ class ParserV1(object):
             return self._read_string()
         elif code == b'b':
             fragment = self._read_binary()
-            next     = self._read(1)
+            next = self._read(1)
             if next.lower() == code:
                 return fragment + self._read_object(next)
             else:
@@ -236,12 +236,12 @@ class ParserV1(object):
         return Binary(self._read(len))
 
     def _read_remote(self):
-        r    = Remote()
+        r = Remote()
         code = self._read(1)
 
         if code == b't':
             r.type = self._read(unpack('>H', self._read(2))[0])
-            code   = self._read(1)
+            code = self._read(1)
         else:
             r.type = None
 
@@ -294,7 +294,7 @@ class ParserV1(object):
 
         fields = {}
         while code != b'z':
-            key, value  = self._read_keyval(code)
+            key, value = self._read_keyval(code)
 
             if isinstance(result, Object):
                 fields[str(key)] = value
@@ -315,7 +315,7 @@ class ParserV1(object):
         return Fault(fault['code'], fault['message'], fault.get('detail'))
 
     def _read_keyval(self, first=None):
-        key   = self._read_object(first or self._read(1))
+        key = self._read_object(first or self._read(1))
         value = self._read_object(self._read(1))
 
         return key, value
@@ -429,8 +429,8 @@ class ParserV2(ParserV1):
             return self._read_list(typed=True, fixed_length=True, length=list_len)
         elif b'\x78' <= code <= b'\x7F':
             # fixed untyped list with direct length
-             list_len = ord(code) - 0x78
-             return self._read_list(typed=False, fixed_length=True, length=list_len)
+            list_len = ord(code) - 0x78
+            return self._read_list(typed=False, fixed_length=True, length=list_len)
         elif b'\x80' <= code <= b'\xBF':
             # one-octet compact int (-x10 to x3f, x90 is 0)
             return ord(code) - 0x90
@@ -572,13 +572,13 @@ class ParserV2(ParserV1):
 
     def _read_binary(self, code, length=None):
         if b'\x20' <= code <= b'\x2F':
-              # binary data length 0-16
-              length = ord(code) - 0x20
+            # binary data length 0-16
+            length = ord(code) - 0x20
         elif b'\x34' <= code <= b'\x37':
-              # binary data length 0-1023
-              len_b1 = (ord(code) - 0x34) << 8
-              len_b0 = ord(self._read(1))
-              length = len_b0 + len_b1
+            # binary data length 0-1023
+            len_b1 = (ord(code) - 0x34) << 8
+            len_b0 = ord(self._read(1))
+            length = len_b0 + len_b1
 
         chunks = []
 
@@ -628,7 +628,7 @@ class ParserV2(ParserV1):
         fields = {}
 
         while code not in (b'z', b'Z'):
-            key, value  = self._read_keyval(code)
+            key, value = self._read_keyval(code)
 
             if key == {}:
                 return result
@@ -648,7 +648,7 @@ class ParserV2(ParserV1):
         return result
 
     def _read_keyval(self, first=None):
-        key   = self._read_object(first or self._read(1))
+        key = self._read_object(first or self._read(1))
         code = self._read(1)
         value = self._read_object(code)
 

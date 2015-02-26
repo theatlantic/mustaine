@@ -32,10 +32,11 @@ RETURN_TYPES = {
     dict: 'map',
 }
 
-class bound_function_wrapper(object): 
+
+class bound_function_wrapper(object):
 
     def __init__(self, wrapped):
-        self.wrapped = wrapped 
+        self.wrapped = wrapped
 
     def __call__(self, *args, **kwargs):
         return self.wrapped(*args, **kwargs)
@@ -66,7 +67,6 @@ def encoder_for(data_type, version=1, return_type=None):
                 return return_type, f(*args)
             else:
                 return f(*args)
-
         return encoder_method_wrapper(wrapper, data_type)
 
     return wrap
@@ -167,7 +167,7 @@ class Encoder(object):
         while len(value) > 65535:
             encoded += pack('>cH', b's', 65535)
             encoded += value[:65535].encode('utf-8')
-            value    = value[65535:]
+            value = value[65535:]
 
         encoded += pack('>cH', b'S', len(value))
         encoded += value.encode('utf-8')
@@ -188,7 +188,7 @@ class Encoder(object):
         while len(value) > 65535:
             encoded += pack('>cH', b's', 65535)
             encoded += value[:65535]
-            value    = value[65535:]
+            value = value[65535:]
 
         encoded += pack('>cH', b'S', len(value.decode('utf-8')))
         encoded += value
@@ -228,8 +228,8 @@ class Encoder(object):
         if ref:
             return (type(obj).__name__, ref)
         obj_type = '.'.join([type(obj).__module__, type(obj).__name__])
-        encoded  = pack('>cH', b't', len(obj_type)) + six.b(obj_type)
-        members  = obj.__getstate__()
+        encoded = pack('>cH', b't', len(obj_type)) + six.b(obj_type)
+        members = obj.__getstate__()
         keyvals = map(self.encode_keyval, members.items())
         encoded += reduce(operator.add, keyvals, b'')
         return (type(obj).__name__, pack('>c', b'M') + encoded + b'z')
@@ -245,12 +245,12 @@ class Encoder(object):
     @encoder_for(Binary)
     def encode_binary(self, obj):
         encoded = b''
-        value   = obj.value
+        value = obj.value
 
         while len(value) > 65535:
             encoded += pack('>cH', b'b', 65535)
             encoded += value[:65535]
-            value    = value[65535:]
+            value = value[65535:]
 
         encoded += pack('>cH', b'B', len(value))
         encoded += value
@@ -259,11 +259,11 @@ class Encoder(object):
 
     @encoder_for(Call)
     def encode_call(self, call):
-        method    = call.method
-        headers   = b''
+        method = call.method
+        headers = b''
         arguments = b''
 
-        for header,value in call.headers.items():
+        for header, value in call.headers.items():
             if not isinstance(header, str):
                 raise TypeError("Call header keys must be strings")
 
@@ -273,20 +273,18 @@ class Encoder(object):
         for arg in call.args:
             data_type, arg = self.encode_arg(arg)
             if call.overload:
-                method    += b'_' + six.b(data_type)
+                method += b'_' + six.b(data_type)
             if isinstance(arg, six.text_type):
                 arg = six.b(arg)
             arguments += arg
 
-        encoded  = pack('>cBB', b'c', call.version, 0)
+        encoded = pack('>cBB', b'c', call.version, 0)
         encoded += headers
         encoded += pack('>cH', b'm', len(method)) + six.b(method)
         encoded += arguments
         encoded += b'z'
 
         return encoded
-
-
 
 
 def encode_object(obj):

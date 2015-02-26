@@ -1,14 +1,17 @@
+"""
+transparent types used for hessian serialization
+objects of this type can appear on the wire but have no native python type
+"""
 import copy
 import six
 
-# transparent types used for hessian serialization
-# objects of this type can appear on the wire but have no native python type
 
 class Call(object):
+
     def __init__(self, method=None, args=None, headers=None, overload=None, version=1):
-        self._method   = method or ''
-        self._args     = args or list()
-        self._headers  = headers or dict()
+        self._method = method or ''
+        self._args = args or list()
+        self._headers = headers or dict()
         self._overload = overload or False
         self.version = version
 
@@ -64,8 +67,9 @@ class Call(object):
 
 
 class Reply(object):
+
     def __init__(self, value=None, headers=None, version=None):
-        self.value    = value # unmanaged property
+        self.value = value # unmanaged property
         self._headers = headers or dict()
         self.version = version
 
@@ -86,10 +90,11 @@ class Reply(object):
 
 
 class Fault(Exception):
+
     def __init__(self, code, message, detail):
-        self.code    = code
-        self.message = message 
-        self.detail  = detail
+        self.code = code
+        self.message = message
+        self.detail = detail
 
     # 'message' property implemented to mask DeprecationWarning
     def _get_message(self):
@@ -124,10 +129,12 @@ class Binary(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
+
 class Remote(object):
+
     def __init__(self, type_name=None, url=None):
         self.type_name = type_name
-        self.url       = url
+        self.url = url
 
 
 class ObjectMeta(type):
@@ -182,6 +189,7 @@ class Object(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 def cls_factory(name, fields=None, bases=None, attrs=None):
     cls_attrs = copy.deepcopy(attrs) if attrs else {}

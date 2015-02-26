@@ -14,9 +14,10 @@ from pyhessian import __version__
 
 
 class ProtocolError(Exception):
-    """ Raised when an HTTP error occurs """
+    """Raised when an HTTP error occurs"""
+
     def __init__(self, url, status, reason):
-        self._url    = url
+        self._url = url
         self._status = status
         self._reason = reason
 
@@ -29,14 +30,16 @@ class ProtocolError(Exception):
 
 class HessianProxy(object):
 
-    def __init__(self, service_uri, credentials=None, key_file=None, cert_file=None, timeout=10, buffer_size=65535, error_factory=lambda x: x, overload=False, version=1):
+    def __init__(self, service_uri, credentials=None, key_file=None,
+            cert_file=None, timeout=10, buffer_size=65535,
+            error_factory=lambda x: x, overload=False, version=1):
         self.version = version
 
         self._headers = list()
         self._headers.append(('User-Agent', 'python-hessian/' + __version__,))
         self._headers.append(('Content-Type', 'application/x-hessian',))
 
-        if sys.version_info < (2,6):
+        if sys.version_info < (2, 6):
             warn('HessianProxy timeout not enforceable before Python 2.6', RuntimeWarning, stacklevel=2)
             kwargs = {}
         else:

@@ -12,9 +12,9 @@ __all__ = ['BufferedReader', 'toposort', 'toposort_flatten']
 class BufferedReader(object):
 
     def __init__(self, input, buffer_size=65535):
-        self.__input       = input
+        self.__input = input
         self.__buffer_size = buffer_size
-        self.__buffer      = StringIO()
+        self.__buffer = StringIO()
 
         # initial fill
         chunk = input.read(buffer_size)
@@ -106,7 +106,7 @@ def toposort(data):
     # Find all items that don't depend on anything.
     extra_items_in_deps = _reduce(set.union, data.values()) - set(data.keys())
     # Add empty dependences where needed.
-    data.update({item:set() for item in extra_items_in_deps})
+    data.update({item: set() for item in extra_items_in_deps})
     while True:
         ordered = set(item for item, dep in data.items() if len(dep) == 0)
         if not ordered:
@@ -116,7 +116,8 @@ def toposort(data):
                 for item, dep in data.items()
                     if item not in ordered}
     if len(data) != 0:
-        raise ValueError('Cyclic dependencies exist among these items: {}'.format(', '.join(repr(x) for x in data.items())))
+        raise ValueError('Cyclic dependencies exist among these items: %s' %
+            ', '.join(repr(x) for x in data.items()))
 
 
 def toposort_flatten(data, sort=True):

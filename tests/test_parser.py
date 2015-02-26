@@ -9,6 +9,7 @@ from .base import HessianTestCase
 # Caucho's Hessian 2.0 reference service
 # interface: http://caucho.com/resin-javadoc/com/caucho/hessian/test/TestHessian2.html
 
+
 class ParserV1TestCase(HessianTestCase):
 
     def test_parse_binary_0(self):
@@ -57,7 +58,7 @@ class ParserV1TestCase(HessianTestCase):
     #     self.assertEqual(expected, reply)
 
     def test_parse_date_0(self):
-        expected =  datetime.datetime.utcfromtimestamp(0)
+        expected = datetime.datetime.utcfromtimestamp(0)
         reply = self.client.replyDate_0()
         self.assertEqual(expected, reply)
 
@@ -342,7 +343,7 @@ class ParserV1TestCase(HessianTestCase):
             protocol.object_factory('com.caucho.hessian.test.A13'),
             protocol.object_factory('com.caucho.hessian.test.A14'),
             protocol.object_factory('com.caucho.hessian.test.A15'),
-            protocol.object_factory('com.caucho.hessian.test.A16')
+            protocol.object_factory('com.caucho.hessian.test.A16'),
         ]
         reply = self.client.replyObject_16()
         self.assertEqual(expected, reply)
@@ -350,7 +351,7 @@ class ParserV1TestCase(HessianTestCase):
     def test_parse_object_2(self):
         expected = [
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1)
+            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1),
         ]
         reply = self.client.replyObject_2()
         self.assertEqual(expected, reply)
@@ -364,7 +365,7 @@ class ParserV1TestCase(HessianTestCase):
     def test_parse_object_2b(self):
         expected = [
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
+            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
         ]
         reply = self.client.replyObject_2b()
         self.assertEqual(expected, reply)
@@ -482,7 +483,6 @@ class ParserV2TestCase(ParserV1TestCase):
         expected = ("1", "2", "3", "4", "5", "6", "7", "8")
         reply = self.client.replyUntypedFixedList_8()
         self.assertEqual(expected, reply)
-
 
     def test_parse_typed_fixed_list_0(self):
         expected = tuple([])

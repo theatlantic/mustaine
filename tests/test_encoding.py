@@ -9,6 +9,7 @@ from .base import HessianTestCase
 # Caucho's Hessian 2.0 reference service
 # interface: http://caucho.com/resin-javadoc/com/caucho/hessian/test/TestHessian2.html
 
+
 class EncoderTestCase(HessianTestCase):
 
     def test_encode_binary_0(self):
@@ -59,14 +60,14 @@ class EncoderTestCase(HessianTestCase):
         self.assertEqual(response, True, "Debug response: %s" % response)
 
     def test_encode_date_0(self):
-        arg =  datetime.datetime.utcfromtimestamp(0)
+        arg = datetime.datetime.utcfromtimestamp(0)
         response = self.client.argDate_0(arg)
         self.assertEqual(response, True, "Debug response: %s" % response)
-    
+
     def test_encode_date_1(self):
         response = self.client.argDate_1(datetime.datetime(1998, 5, 8, 9, 51, 31))
         self.assertEqual(response, True, "Debug response: %s" % response)
-    
+
     def test_encode_date_2(self):
         response = self.client.argDate_2(datetime.datetime(1998, 5, 8, 9, 51, 0))
         self.assertEqual(response, True, "Debug response: %s" % response)
@@ -296,7 +297,7 @@ class EncoderTestCase(HessianTestCase):
             protocol.object_factory('com.caucho.hessian.test.A13'),
             protocol.object_factory('com.caucho.hessian.test.A14'),
             protocol.object_factory('com.caucho.hessian.test.A15'),
-            protocol.object_factory('com.caucho.hessian.test.A16')
+            protocol.object_factory('com.caucho.hessian.test.A16'),
         ]
 
         response = self.client.argObject_16(payload)
@@ -305,7 +306,7 @@ class EncoderTestCase(HessianTestCase):
     def test_encode_object_2(self):
         payload = [
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1)
+            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1),
         ]
 
         response = self.client.argObject_2(payload)
@@ -320,7 +321,7 @@ class EncoderTestCase(HessianTestCase):
     def test_encode_object_2b(self):
         payload = [
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
+            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
         ]
 
         response = self.client.argObject_2b(payload)
@@ -328,9 +329,9 @@ class EncoderTestCase(HessianTestCase):
 
     ### argObject_3 causes a stack pop. BOOM, recursion.
     def test_encode_object_3(self):
-        payload = protocol.object_factory('com.caucho.hessian.test.TestCons', _first = 'a', _rest = None)
+        payload = protocol.object_factory('com.caucho.hessian.test.TestCons', _first='a', _rest=None)
         payload._rest = payload
-    
+
         response = self.client.argObject_3(payload)
         self.assertEqual(response, True, "Debug response: %s" % response)
 
