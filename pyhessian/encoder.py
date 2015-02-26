@@ -9,7 +9,7 @@ from six.moves import reduce
 
 from pyhessian.protocol import Call, Object, Remote, Binary
 
-from .utils import toposort
+from .utils import toposort_flatten
 from .data_types import long
 
 # Implementation of Hessian 1.0.2 serialization
@@ -82,7 +82,7 @@ def sort_mro(encoders):
     """
     type_encoders = dict([[e.data_type, e] for e in encoders])
     mro_dict = dict([[k, set(k.mro()[1:])] for k in type_encoders.keys()])
-    sorted_classes = reversed(toposort.toposort_flatten(mro_dict, sort=False))
+    sorted_classes = reversed(toposort_flatten(mro_dict, sort=False))
     return [type_encoders[cls] for cls in sorted_classes if cls in type_encoders]
 
 

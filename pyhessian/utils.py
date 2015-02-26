@@ -1,3 +1,53 @@
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from six import BytesIO as StringIO
+
+from functools import reduce as _reduce
+
+
+__all__ = ['BufferedReader', 'toposort', 'toposort_flatten']
+
+
+class BufferedReader(object):
+
+    def __init__(self, input, buffer_size=65535):
+        self.__input       = input
+        self.__buffer_size = buffer_size
+        self.__buffer      = StringIO()
+
+        # initial fill
+        chunk = input.read(buffer_size)
+        self.__byte_count = len(chunk)
+        self.__buffer.write(chunk)
+        self.__buffer.seek(0)
+
+    def read(self, byte_count):
+        difference = byte_count - self.__byte_count
+
+        if difference < 0:
+            chunk = self.__buffer.read(byte_count)
+            self.__byte_count -= byte_count
+        else:
+            chunk = self.__buffer.read() + self.__input.read(difference)
+
+            # verify size
+            if len(chunk) != byte_count:
+                raise EOFError("Encountered unexpected end of stream")
+
+            # reset internal buffer
+            self.__buffer.seek(0)
+            self.__buffer.truncate()
+
+            # replenish
+            fresh_chunk = self.__input.read(self.__buffer_size)
+            self.__byte_count = len(fresh_chunk)
+            self.__buffer.write(fresh_chunk)
+            self.__buffer.seek(0)
+
+        return chunk
+
+
 #######################################################################
 # Implements a topological sort algorithm.
 #
@@ -33,17 +83,15 @@
 #
 ########################################################################
 
-from functools import reduce as _reduce
-
-__all__ = ['toposort', 'toposort_flatten']
 
 def toposort(data):
-    """Dependencies are expressed as a dictionary whose keys are items
-and whose values are a set of dependent items. Output is a list of
-sets in topological order. The first set consists of items with no
-dependences, each subsequent set consists of items that depend upon
-items in the preceeding sets.
-"""
+    """
+    Dependencies are expressed as a dictionary whose keys are items
+    and whose values are a set of dependent items. Output is a list of
+    sets in topological order. The first set consists of items with no
+    dependences, each subsequent set consists of items that depend upon
+    items in the preceeding sets.
+    """
 
     # Special case empty input.
     if len(data) == 0:
@@ -72,9 +120,11 @@ items in the preceeding sets.
 
 
 def toposort_flatten(data, sort=True):
-    """Returns a single list of dependencies. For any set returned by
-toposort(), those items are sorted and appended to the result (just to
-make the results deterministic)."""
+    """
+    Returns a single list of dependencies. For any set returned by
+    toposort(), those items are sorted and appended to the result (just to
+    make the results deterministic).
+    """
 
     result = []
     for d in toposort(data):

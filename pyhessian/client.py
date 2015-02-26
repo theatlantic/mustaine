@@ -9,7 +9,7 @@ import six
 from pyhessian.encoder import encode_object
 from pyhessian.parser import Parser
 from pyhessian.protocol import Call, Fault
-from pyhessian._util import BufferedReader
+from pyhessian.utils import BufferedReader
 from pyhessian import __version__
 
 
