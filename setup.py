@@ -1,10 +1,30 @@
 import os
 import sys
 from setuptools import find_packages, setup
+from setuptools.command.test import test as TestCommand
+
 from pyhessian import __version__
 
 if sys.version_info < (2, 7):
     raise NotImplementedError("python-hessian requires Python 2.7 or later")
+
+
+class Tox(TestCommand):
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.tox_args = None
+
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_args = []
+        self.test_suite = True
+
+    def run_tests(self):
+        import tox
+        errno = tox.cmdline()
+        sys.exit(errno)
+
 
 setup(
     name="python-hessian",
@@ -27,7 +47,8 @@ setup(
     author="Frankie Dintino",
     author_email="fdintino@theatlantic.com",
     license="BSD",
-
+    tests_require=['tox'],
+    cmdclass={'test': Tox},
     platforms="any",
     packages=find_packages(exclude=["test"]),
     zip_safe=True)
