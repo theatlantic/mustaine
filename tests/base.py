@@ -1,9 +1,13 @@
 import os
 import re
 from subprocess import Popen, PIPE
-import unittest
 import select
 from threading import Timer
+
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 from pyhessian.client import HessianProxy
 

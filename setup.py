@@ -5,8 +5,8 @@ from setuptools.command.test import test as TestCommand
 
 from pyhessian import __version__
 
-if sys.version_info < (2, 7):
-    raise NotImplementedError("python-hessian requires Python 2.7 or later")
+if sys.version_info < (2, 6):
+    raise NotImplementedError("python-hessian requires Python 2.6 or later")
 
 
 class Tox(TestCommand):

@@ -1,4 +1,7 @@
-import unittest
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
 
 from .test_encoding import EncoderTestCase
 from .test_parser import ParserV1TestCase, ParserV2TestCase
