@@ -414,6 +414,10 @@ class ParserV1TestCase(HessianTestCase):
         reply = self.client.replyTrue()
         self.assertEqual(expected, reply)
 
+    def test_fault_method_does_not_exist(self):
+        with self.assertRaises(protocol.Fault):
+            self.client.nonExistantMethod()
+
 
 class ParserV2TestCase(ParserV1TestCase):
 

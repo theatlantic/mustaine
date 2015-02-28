@@ -73,6 +73,11 @@ class Parser(object):
                 self.read_version()
                 self._result = Reply(version=self.version)
 
+            elif self.version == 2 and not self._result and code == b'F':
+                self._result = Reply(value=self._adapter._read_fault(),
+                    version=self.version)
+                break
+
             else:
                 if not self._result:
                     raise ParseError("Invalid Hessian message marker: %r" % (code,))
@@ -648,3 +653,7 @@ class ParserV2(ParserV1):
         value = self._read_object(code)
 
         return key, value
+
+    def _read_fault(self):
+        fault = self._read_object()
+        return Fault(fault['code'], fault['message'], fault.get('detail'))
