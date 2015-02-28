@@ -57,7 +57,7 @@ class HessianTestCase(unittest.TestCase):
         timer.start()
 
         port_num = None
-        stderr = ''
+        stderr = b''
 
         while True:
             rlist = select.select(
@@ -72,7 +72,7 @@ class HessianTestCase(unittest.TestCase):
                     stderr += proc.stderr.readline()
 
             if line is not None:
-                port_num_matches = re_port_number.search(line)
+                port_num_matches = re_port_number.search(line.decode('utf-8'))
                 if port_num_matches:
                     port_num = int(port_num_matches.group(1))
                     timer.cancel()
@@ -80,8 +80,8 @@ class HessianTestCase(unittest.TestCase):
 
             if proc.poll() != None:
                 if getattr(proc, 'timed_out', False):
-                    raise Exception("Timed out waiting for port\n%s" % stderr)
+                    raise Exception("Timed out waiting for port\n%s" % stderr.decode('utf-8'))
                 else:
-                    raise Exception("Process terminated unexpectedly\n%s" % stderr)
+                    raise Exception("Process terminated unexpectedly\n%s" % stderr.decode('utf-8'))
 
         return proc, port_num
