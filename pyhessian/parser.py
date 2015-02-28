@@ -60,7 +60,7 @@ class Parser(object):
                     raise ParseError('Encountered duplicate type header')
                 self.read_version()
 
-            elif code == b'R':
+            elif code == b'R' and self.version == 2 and not self._result:
                 self._result = Reply(version=self.version)
 
             elif self.version == 1 and code == b'c':

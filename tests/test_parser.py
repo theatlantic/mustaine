@@ -404,10 +404,10 @@ class ParserV1TestCase(HessianTestCase):
     def test_parse_string_1024(self):
         self.assertEqual(self.client.replyString_1024(), self.get_reply_str_1024())
 
-    # def test_parse_string_65536(self):
-    #     expected = self.get_reply_str_65536()
-    #     reply = self.client.replyString_65536()
-    #     self.assertEqual(expected, str(reply))
+    def test_parse_string_65536(self):
+        expected = self.get_reply_str_65536()
+        reply = self.client.replyString_65536()
+        self.assertEqual(expected, str(reply))
 
     def test_parse_true(self):
         expected = True
