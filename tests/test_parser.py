@@ -52,10 +52,10 @@ class ParserV1TestCase(HessianTestCase):
     def test_parse_binary_16(self):
         self.assertEqual(self.client.replyBinary_16(), protocol.Binary(b"0123456789012345"))
 
-    # def test_parse_binary_65536(self):
-    #     expected = protocol.Binary(self.get_reply_str_65536())
-    #     reply = self.client.replyBinary_65536()
-    #     self.assertEqual(expected, reply)
+    def test_parse_binary_65536(self):
+        expected = protocol.Binary(six.b(self.get_reply_str_65536()))
+        reply = self.client.replyBinary_65536()
+        self.assertEqual(expected, reply)
 
     def test_parse_date_0(self):
         expected = datetime.datetime.utcfromtimestamp(0)

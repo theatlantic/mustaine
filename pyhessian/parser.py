@@ -567,19 +567,18 @@ class ParserV2(ParserV1):
         return reduce(operator.add, bytes, b'').decode('utf-8')
 
     def _read_binary(self, code, length=None):
-        if b'\x20' <= code <= b'\x2F':
-            # binary data length 0-16
-            length = ord(code) - 0x20
-        elif b'\x34' <= code <= b'\x37':
-            # binary data length 0-1023
-            len_b1 = (ord(code) - 0x34) << 8
-            len_b0 = ord(self._read(1))
-            length = len_b0 + len_b1
-
         chunks = []
 
         while True:
-            if length is None:
+            if b'\x20' <= code <= b'\x2F':
+                # binary data length 0-16
+                length = ord(code) - 0x20
+            elif b'\x34' <= code <= b'\x37':
+                # binary data length 0-1023
+                len_b1 = (ord(code) - 0x34) << 8
+                len_b0 = ord(self._read(1))
+                length = len_b0 + len_b1
+            else:
                 len_bytes = self._read(2)
                 length = unpack('>H', len_bytes)[0]
             if length == 0:
