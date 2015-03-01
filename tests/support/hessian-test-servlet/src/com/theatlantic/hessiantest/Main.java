@@ -6,6 +6,13 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import com.caucho.hessian.test.TestHessian2Servlet;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+
+
 public class Main extends TestHessian2Servlet {
 
     private static final long serialVersionUID = -3429056066423924965L;
@@ -19,6 +26,18 @@ public class Main extends TestHessian2Servlet {
             return true;
         }
         return getInputDebug();
+    }
+
+    public Iterator<String> replyUntypedVariableList_0() {
+        String items[] = {};
+        List<String> list = Arrays.asList(items);
+        return list.iterator();
+    }
+
+    public Iterator<String> replyUntypedVariableList_1() {
+        String items[] = {"a", "b"};
+        List<String> list = Arrays.asList(items);
+        return list.iterator();
     }
 
     public static void main(String[] args) throws Exception {

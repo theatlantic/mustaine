@@ -327,7 +327,7 @@ class ParserV1TestCase(HessianTestCase):
         self.assertEqual(expected, reply)
 
     def test_parse_object_16(self):
-        expected = [
+        expected = (
             protocol.object_factory('com.caucho.hessian.test.A0'),
             protocol.object_factory('com.caucho.hessian.test.A1'),
             protocol.object_factory('com.caucho.hessian.test.A2'),
@@ -345,29 +345,29 @@ class ParserV1TestCase(HessianTestCase):
             protocol.object_factory('com.caucho.hessian.test.A14'),
             protocol.object_factory('com.caucho.hessian.test.A15'),
             protocol.object_factory('com.caucho.hessian.test.A16'),
-        ]
+        )
         reply = self.client.replyObject_16()
         self.assertEqual(expected, reply)
 
     def test_parse_object_2(self):
-        expected = [
+        expected = (
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1),
-        ]
+        )
         reply = self.client.replyObject_2()
         self.assertEqual(expected, reply)
 
     def test_parse_object_2a(self):
         payload = protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
-        expected = [payload, payload]
+        expected = (payload, payload)
         reply = self.client.replyObject_2a()
         self.assertEqual(expected, reply)
 
     def test_parse_object_2b(self):
-        expected = [
+        expected = (
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
             protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-        ]
+        )
         reply = self.client.replyObject_2b()
         self.assertEqual(expected, reply)
 
@@ -413,71 +413,6 @@ class ParserV1TestCase(HessianTestCase):
     def test_parse_true(self):
         expected = True
         reply = self.client.replyTrue()
-        self.assertEqual(expected, reply)
-
-    def test_fault_method_does_not_exist(self):
-        with self.assertRaises(protocol.Fault):
-            self.client.nonExistantMethod()
-
-    def test_parse_string_emoji(self):
-        expected = u"\U0001F603"
-        reply = self.client.replyString_emoji()
-        self.assertEqual(expected, reply)
-
-    def test_parse_call(self):
-        expected = protocol.Call(method=b'methodNull', args=[], version=1)
-        encoded = b'c\x01\x00m\x00\nmethodNullz'
-        decoded = Parser().parse_string(encoded)
-        self.assertEqual(expected, decoded)
-
-
-class ParserV2TestCase(ParserV1TestCase):
-
-    version = 2
-
-    def test_parse_object_16(self):
-        expected = (
-            protocol.object_factory('com.caucho.hessian.test.A0'),
-            protocol.object_factory('com.caucho.hessian.test.A1'),
-            protocol.object_factory('com.caucho.hessian.test.A2'),
-            protocol.object_factory('com.caucho.hessian.test.A3'),
-            protocol.object_factory('com.caucho.hessian.test.A4'),
-            protocol.object_factory('com.caucho.hessian.test.A5'),
-            protocol.object_factory('com.caucho.hessian.test.A6'),
-            protocol.object_factory('com.caucho.hessian.test.A7'),
-            protocol.object_factory('com.caucho.hessian.test.A8'),
-            protocol.object_factory('com.caucho.hessian.test.A9'),
-            protocol.object_factory('com.caucho.hessian.test.A10'),
-            protocol.object_factory('com.caucho.hessian.test.A11'),
-            protocol.object_factory('com.caucho.hessian.test.A12'),
-            protocol.object_factory('com.caucho.hessian.test.A13'),
-            protocol.object_factory('com.caucho.hessian.test.A14'),
-            protocol.object_factory('com.caucho.hessian.test.A15'),
-            protocol.object_factory('com.caucho.hessian.test.A16'),
-        )
-        reply = self.client.replyObject_16()
-        self.assertEqual(expected, reply)
-
-    def test_parse_object_2(self):
-        expected = (
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=1),
-        )
-        reply = self.client.replyObject_2()
-        self.assertEqual(expected, reply)
-
-    def test_parse_object_2a(self):
-        payload = protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
-        expected = (payload, payload)
-        reply = self.client.replyObject_2a()
-        self.assertEqual(expected, reply)
-
-    def test_parse_object_2b(self):
-        expected = (
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-            protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-        )
-        reply = self.client.replyObject_2b()
         self.assertEqual(expected, reply)
 
     def test_parse_untyped_fixed_list_0(self):
@@ -538,7 +473,27 @@ class ParserV2TestCase(ParserV1TestCase):
     def test_parse_untyped_map_3(self):
         reply = self.client.replyUntypedMap_3()
         expected = {('a', ): 0}
+        self.assertEqual(expected, reply)    
+
+    def test_fault_method_does_not_exist(self):
+        with self.assertRaises(protocol.Fault):
+            self.client.nonExistantMethod()
+
+    def test_parse_string_emoji(self):
+        expected = u"\U0001F603"
+        reply = self.client.replyString_emoji()
         self.assertEqual(expected, reply)
+
+    def test_parse_call(self):
+        expected = protocol.Call(method=b'methodNull', args=[], version=1)
+        encoded = b'c\x01\x00m\x00\nmethodNullz'
+        decoded = Parser().parse_string(encoded)
+        self.assertEqual(expected, decoded)
+
+
+class ParserV2TestCase(ParserV1TestCase):
+
+    version = 2
 
     def test_parse_typed_map_0(self):
         expected = {}
@@ -565,3 +520,13 @@ class ParserV2TestCase(ParserV1TestCase):
         encoded = b'H\x02\x00C\x0amethodNull\x90'
         decoded = Parser().parse_string(encoded)
         self.assertEqual(expected, decoded)
+
+    def test_parse_untyped_variable_list_0(self):
+        expected = []
+        reply = self.client.replyUntypedVariableList_0()
+        self.assertEqual(expected, reply)
+
+    def test_parse_untyped_variable_list_1(self):
+        expected = ['a', 'b']
+        reply = self.client.replyUntypedVariableList_1()
+        self.assertEqual(expected, reply)

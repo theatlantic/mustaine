@@ -278,10 +278,13 @@ class ParserV1(object):
             self._read(unpack('>H', self._read(2))[0])
             code = self._read(1)
 
+        fixed_length = False
+
         if code == b'l':
             # read and discard list length
             self._read(4)
             code = self._read(1)
+            fixed_length = True
 
         result = []
         self._refs.append(result)
@@ -290,7 +293,10 @@ class ParserV1(object):
             result.append(self._read_object(code))
             code = self._read(1)
 
-        return result
+        if fixed_length:
+            return tuple(result)
+        else:
+            return result
 
     def _read_map(self):
         code = self._read(1)
@@ -498,33 +504,26 @@ class ParserV2(ParserV1):
         if length is 0:
             return tuple([]) if fixed_length else []
 
-        code = self._read(1)
-
-        if code in (b't', b'l'):
-            # Hessian 1.0 list
-            return super(ParserV2, self)._read_list(code=code)
-
         if typed:
             # read and discard list type
-            self._read_object(code)
-            code = None
+            self._read_object()
 
         result = []
         self._refs.append(result)
 
         if fixed_length:
             if length is None:
-                length = self._read_object(code)
-                code = None
+                length = self._read_object()
             while len(result) < length:
-                result.append(self._read_object(code))
-                code = None
+                result.append(self._read_object())
         else:
-            obj = self._read_object(code)
-            code = None
-            while obj != 'Z':
-                result.append(obj)
-                obj = self._read_object()
+            while True:
+                try:
+                    obj = self._read_object()
+                except ListMapTerminator:
+                    break
+                else:
+                    result.append(obj)
 
         if fixed_length:
             return tuple(result)
