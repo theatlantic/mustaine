@@ -1,0 +1,12 @@
+build-local.properties
+build/
+classes/
+.DS_Store
+lib/hessian-4.0.37.jar
+lib/javax.servlet-api-3.1.0.jar
+lib/jetty-http-9.2.9.v20150224.jar
+lib/jetty-io-9.2.9.v20150224.jar
+lib/jetty-security-9.2.9.v20150224.jar
+lib/jetty-server-9.2.9.v20150224.jar
+lib/jetty-servlet-9.2.9.v20150224.jar
+lib/jetty-util-9.2.9.v20150224.jar

@@ -1,0 +1,327 @@
+<!--
+
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+-->
+<!--
+
+Build Tools
+..............................................................................
+
+This build system is based on Apache Ant, which is a Java building tool used
+in Apache projects. For more information refer to <http://ant.apache.org/>.
+
+The distribution contains a precompiled version of Ant.
+
+The only thing that you have to make sure, is that the "JAVA_HOME" environment
+property should be set to match the JVM you want to use.
+
+If you are going to be doing development you may want to create a file
+called 'build.properties' with the line 'debug=on' in it.  This will
+turn on the generation of debugging information when compiling this Hessian
+test.
+
+Building Instructions
+..............................................................................
+
+First, make sure your current working directory is where this file is located.
+Then type:
+
+  [unix]  ./build.sh compile
+  [win32] .\build.bat compile
+
+This action will compile the sources to the 'classes' directory.
+
+
+Build Targets
+..............................................................................
+
+To display the available targets type:
+
+  [unix]  ./build.sh  help
+  [win32] .\build.bat help
+
+
+ $Id$
+
+-->
+
+<project default="jar" name="hessian-test-servlet" basedir=".">
+
+  <!-- Configuring the build -->
+  <property file="${basedir}/build-local.properties"/>
+  <property environment="env"/>
+
+  <!-- Add ant-contrib -->
+  <taskdef resource="net/sf/antcontrib/antcontrib.properties">
+    <classpath>
+      <pathelement location="lib/build/ant-contrib-1.0b3.jar" />
+    </classpath>
+  </taskdef>
+
+  <!-- Initializations .................................................... -->
+  <target name="init" unless="init.done">
+    <tstamp>
+      <format property="ts" pattern="yyyyMMdd-HHmmss-z"/>
+    </tstamp>
+    <property name="Project"            value="Hessian Test Servlet"/>
+    <property name="project"            value="hessian-test-servlet"/>
+    <property name="year"               value="2015"/>
+    <property name="version"            value="1.0"/>
+    <property name="revisionType"       value=""/>
+    <property name="revisionNumber"     value=""/>
+    <property name="completeVersion"    value="${version}${revisionType}${revisionNumber}"/>
+
+    <property file="build.properties"/>
+    <property name="debug"              value="on"/>
+    <property name="optimize"           value="on"/>
+    <property name="deprecation"        value="on"/>
+
+    <property name="src"                value="src"/>
+    <property name="dest"               value="classes"/>
+    <property name="build"              value="build"/>
+    <property name="build.id"           value="${ts} (${user.name} [${os.name} ${os.version} ${os.arch}, Java ${java.runtime.version}])"/>
+    <property name="docs"               value="${build}/javadocs"/>
+    <property name="downloads"          value="${build}/downloads"/>
+    <property name="lib"                value="lib"/>
+    <property name="class-prefix"       value="com.theatlantic.hessiantest"/>
+    <property name="jdk.javadoc"        value="http://docs.oracle.com/javase/1.4.2/docs/api/"/>
+    <property name="dl.jetty"           value="http://download.eclipse.org/jetty/9.2.9.v20150224/dist/jetty-distribution-9.2.9.v20150224.zip" />
+    <property name="dl.jetty.md5"       value="c1364f818901fe202953508a626b889c" />
+    <property name="dl.hessian"         value="http://hessian.caucho.com/download/hessian-4.0.37.jar" />
+    <property name="dl.hessian.md5"     value="8249c56cc957145a05323a8314713b20" />
+    <property name="dl.servlet-api"     value="http://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar" />
+    <property name="dl.servlet-api.md5" value="79de69e9f5ed8c7fcb8342585732bbf7" />
+
+
+    <pathconvert property="cwd">
+      <path path="."/>
+    </pathconvert>
+
+    <path id="libs-classpath">
+      <fileset dir="lib">
+        <include name="*.jar"/>
+      </fileset>
+    </path>
+
+
+    <!-- Info ............................................................... -->
+    <echo message=" == ${Project} ${completeVersion} build file ================================"/>
+    <echo message=""/>
+    <echo message="    JAVA_HOME: ${env.JAVA_HOME}"/>
+    <echo message="    VM:        ${java.vm.version}, ${java.vm.vendor}"/>
+
+    <property name="init.done" value="true"/>
+  </target>
+
+  <!-- Help ............................................................... -->
+  <target name="help" depends="init" description="Displays the usage">
+    <echo message=""/>
+    <echo message="The following build targets are available:"/>
+    <echo message=""/>
+    <echo message=" -- Building ------------------------------------------------------"/>
+    <echo message=""/>
+    <echo message="    compile"/>
+    <echo message="        Compiles all of the hessian test servlet."/>
+    <echo message="        (Creates class files in classes/ from files in src/"/>
+    <echo message=""/>
+    <echo message="    jar"/>
+    <echo message="        Builds a single jar that contains all hessian test servlet libraries"/>
+    <echo message="        including its dependencies."/>
+    <echo message="        (Creates ${build}/${project}.jar.)"/>
+    <echo message=""/>
+    <echo message="    root-jar"/>
+    <echo message="        Builds a single jar that contains all hessian test servlet libraries"/>
+    <echo message="        not including its dependencies."/>
+    <echo message="        (Creates ${build}/${project}-lib.jar.)"/>
+    <echo message=""/>
+    <echo message="    download-binaries"/>
+    <echo message="        Downloads third-party binaries and extracts their packaged jars."/>
+    <echo message=""/>
+    <echo message="    javadoc"/>
+    <echo message="        Generates the API documentation."/>
+    <echo message="        (Creates ${docs})"/>
+    <echo message=""/>
+    <echo message=""/>
+    <echo message="    clean"/>
+    <echo message="        Removes all output files and directories."/>
+    <echo message="    "/>
+    <echo message="See the comments in the build.xml file for more details."/>
+  </target>
+
+  <!-- Compilation ........................................................ -->
+
+
+  <target name="compile-prepare" depends="init" unless="compile-prepare.done">
+    <mkdir dir="${dest}"/>
+    <echo message="debug ${debug}, optimize ${optimize}, deprecation ${deprecation}"/>
+    <property name="compile-prepare.done" value="true"/>
+  </target>
+
+  <target name="compile" depends="init, compile-prepare" unless="compile.done">
+    <javac destdir="${dest}" deprecation="${deprecation}" includeantruntime="false"
+           debug="${debug}" optimize="${optimize}" encoding="UTF-8">
+      <src path="${src}"/>
+      <classpath refid="libs-classpath"/>
+    </javac>
+    <property name="compile.done" value="true"/>
+  </target>
+
+  <target name="clean-compile" depends="init"
+          description="Cleans the files generated by compile">
+    <delete dir="${dest}"/>
+  </target>
+
+  <target name="clean-apache" depends="init"
+          description="Cleans the Apache files generated by compile">
+    <delete dir="${dest}/org/apache"/>
+  </target>
+
+  <!-- Jars ............................................................... -->
+  <target name="prepare-build" depends="init">
+    <mkdir dir="${build}"/>
+    <mkdir dir="${build}/downloads"/>
+    <mkdir dir="${build}/javadocs"/>
+  </target>
+
+  <macrodef name="get-and-checksum">
+    <attribute name="url"/>
+    <attribute name="dest"/>
+    <attribute name="md5"/>
+    <attribute name="dlprop"/>
+    <sequential>
+      <local name="downloaded" />
+      <local name="destdir"/>
+      <local name="destfile"/>
+      <available file="@{dest}" property="downloaded" />
+      <property name="@{dlprop}" value="${downloaded}" />
+      <dirname property="destdir" file="@{dest}"/>
+      <basename property="destfile" file="@{dest}"/>
+      <if>
+        <equals arg1="${downloaded}" arg2="true" />
+        <then>
+          <echo message="Already downloaded ${destfile}" />
+        </then>
+        <else>
+          <echo message="Downloading ${destfile}" />
+          <get src="@{url}" dest="@{dest}" />
+          <local name="checksum.matches"/>
+          <local name="checksum.matches.fail"/>
+          <checksum file="@{dest}" property="@{md5}" verifyproperty="checksum.matches"/>
+          <condition property="checksum.matches.fail">
+            <equals arg1="${checksum.matches}" arg2="false"/>
+          </condition>
+          <fail if="checksum.matches.fail" message="Checksum error in ${destfile}" />
+        </else>
+      </if>
+    </sequential>
+  </macrodef>
+
+  <target name="servlet-api-download" depends="prepare-build" unless="servlet-api.downloaded">
+    <basename property="dl.servlet-api.file" file="${dl.servlet-api}" />
+    <get-and-checksum url="${dl.servlet-api}" dest="${lib}/${dl.servlet-api.file}" md5="${dl.servlet-api.md5}" dlprop="servlet-api.downloaded" />
+  </target>
+
+  <target name="jetty-extract" depends="prepare-build" unless="jetty.extracted">
+    <basename property="dl.jetty.file" file="${dl.jetty}" />
+    <get-and-checksum url="${dl.jetty}" dest="${downloads}/${dl.jetty.file}" md5="${dl.jetty.md5}" dlprop="jetty.downloaded" />
+    <unzip src="${downloads}/${dl.jetty.file}" dest="${lib}" overwrite="false">
+      <patternset>
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-http-9.2.9.v20150224.jar" />
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-io-9.2.9.v20150224.jar" />
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-security-9.2.9.v20150224.jar" />
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-server-9.2.9.v20150224.jar" />
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-servlet-9.2.9.v20150224.jar" />
+         <include name="jetty-distribution-9.2.9.v20150224/lib/jetty-util-9.2.9.v20150224.jar" />
+      </patternset>
+      <mapper type="flatten" />
+    </unzip>
+    <property name="jetty.extracted" value="true"/>
+  </target>
+
+  <target name="hessian-download" depends="prepare-build" unless="hessian.downloaded">
+    <basename property="dl.hessian.file" file="${dl.hessian}" />
+    <get-and-checksum url="${dl.hessian}" dest="${lib}/${dl.hessian.file}" md5="${dl.hessian.md5}" dlprop="hessian.downloaded" />
+  </target>
+
+  <target name="download-binaries" depends="jetty-extract, hessian-download, servlet-api-download"></target>
+
+  <!-- All hessian test in a single jar (dependencies: all) -->
+  <target name="jar" depends="init, prepare-build, download-binaries, compile"
+          description="Creates a combined JAR file of the Hessian test libraries in ${build}">
+    <jar destfile="${build}/${project}.jar">
+      <zipgroupfileset dir="lib" includes="*.jar" />
+      <manifest>
+        <attribute name="Implementation-Title" value="Hessian Test"/>
+        <attribute name="Implementation-Version" value="${completeVersion}"/>
+        <attribute name="Implementation-Vendor" value="The Atlantic &lt;http://www.theatlantic.com/&gt;"/>
+        <attribute name="Build-Id" value="${build.id}"/>
+        <attribute name="Main-Class" value="${class-prefix}.Main"/>
+      </manifest>
+      <metainf dir="${basedir}" includes="LICENSE,NOTICE"/>
+      <fileset dir="${dest}" excludes="**/.git*">
+        <include name="**/*.class"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <!-- hessian-test-servlet-lib.jar (dependencies: all) -->
+  <target name="root-jar" depends="init, prepare-build, download-binaries, compile">
+    <jar jarfile="${build}/${project}-lib.jar">
+      <manifest>
+        <attribute name="Implementation-Title" value="Hessian Test Servlet library"/>
+        <attribute name="Implementation-Version" value="${completeVersion}"/>
+        <attribute name="Implementation-Vendor" value="The Atlantic &lt;http://www.theatlantic.com/&gt;"/>
+        <attribute name="Build-Id" value="${build.id}"/>
+        <attribute name="Main-Class" value="${class-prefix}.Main"/>
+      </manifest>
+      <metainf dir="${basedir}" includes="LICENSE,NOTICE"/>
+      <fileset dir="${dest}" excludes="**/.git*">
+        <include name="**/*.class"/>
+      </fileset>
+    </jar>
+  </target>
+
+  <!-- Documentation ...................................................... -->
+
+  <target name="javadocs" depends="javadoc"/>
+  <target name="javadoc" depends="init">
+    <javadoc packagenames="${class-prefix}.*"
+             maxmemory="128m"
+             destdir="${docs}"
+             encoding="UTF-8"
+             author="true"
+             version="false"
+             use="true"
+             splitindex="true"
+             docencoding="UTF-8"
+             charset="UTF-8"
+             windowtitle="${Project} Javadoc"
+             doctitle="${Project} API Specification ${completeVersion}"
+             bottom="Copyright &#169; ${year} Atlantic Media. All Rights Reserved.">
+      <sourcepath path="${src}"/>
+      <classpath refid="libs-classpath"/>
+      <link href="${jdk.javadoc}"/>
+    </javadoc>
+  </target>
+
+  <!-- Cleans everything .................................................. -->
+  <target name="clean"
+          depends="init, clean-compile"
+          description="Cleans everything">
+    <delete dir="${build}"/>
+  </target>
+</project>

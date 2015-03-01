@@ -1,3 +1,4 @@
+.DS_Store
 *.py[co]
 *.egg
 *.egg-info
@@ -6,3 +7,15 @@ dist
 build
 tags
 .tox
+
+tests/support/hessian-test-servlet/build-local.properties
+tests/support/hessian-test-servlet/build/
+tests/support/hessian-test-servlet/classes/
+tests/support/hessian-test-servlet/lib/hessian-4.0.37.jar
+tests/support/hessian-test-servlet/lib/javax.servlet-api-3.1.0.jar
+tests/support/hessian-test-servlet/lib/jetty-http-9.2.9.v20150224.jar
+tests/support/hessian-test-servlet/lib/jetty-io-9.2.9.v20150224.jar
+tests/support/hessian-test-servlet/lib/jetty-security-9.2.9.v20150224.jar
+tests/support/hessian-test-servlet/lib/jetty-server-9.2.9.v20150224.jar
+tests/support/hessian-test-servlet/lib/jetty-servlet-9.2.9.v20150224.jar
+tests/support/hessian-test-servlet/lib/jetty-util-9.2.9.v20150224.jar
