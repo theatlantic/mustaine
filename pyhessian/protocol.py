@@ -9,19 +9,19 @@ import six
 class Call(object):
 
     def __init__(self, method=None, args=None, headers=None, overload=None, version=1):
-        self._method = method or ''
-        self._args = args or list()
-        self._headers = headers or dict()
-        self._overload = overload or False
+        self.method = method or ''
+        self.args = args or list()
+        self.headers = headers or dict()
+        self.overload = overload or False
         self.version = version
 
     def _get_method(self):
         return self._method
 
     def _set_method(self, value):
-        if isinstance(value, str):
+        if isinstance(value, six.binary_type):
             self._method = value
-        elif isinstance(value, unicode):
+        elif isinstance(value, six.text_type):
             self._method = value.encode('utf-8')
         else:
             raise TypeError("Call.method must be a string")
@@ -47,7 +47,7 @@ class Call(object):
             raise TypeError("Call.headers must be a dict of strings to objects")
 
         for key in value.keys():
-            if not isinstance(key, basestring):
+            if not isinstance(key, six.string_types):
                 raise TypeError("Call.headers must be a dict of strings to objects")
 
         self._headers = value
@@ -64,6 +64,14 @@ class Call(object):
             raise TypeError("Call.overload must be True or False")
 
     overload = property(_get_overload, _set_overload)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return (self.__dict__ == other.__dict__)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 
 class Reply(object):

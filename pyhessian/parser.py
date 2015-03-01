@@ -7,9 +7,9 @@ import six
 try:
     from cStringIO import StringIO
 except ImportError:
-    from six import StringIO
+    from six import BytesIO as StringIO
 
-from six.moves import reduce
+from six.moves import range, reduce
 
 from pyhessian.protocol import (
     Call, Reply, Fault, Binary, Remote, Object, cls_factory)
@@ -37,7 +37,7 @@ class Parser(object):
         }
 
     def parse_string(self, string):
-        if isinstance(string, unicode):
+        if isinstance(string, six.text_type):
             stream = StringIO(string.encode('utf-8'))
         else:
             stream = StringIO(string)
@@ -55,33 +55,34 @@ class Parser(object):
         while True:
             code = self._read(1)
 
-            if code == b'H' and not self.version:
-                if self._result:
-                    raise ParseError('Encountered duplicate type header')
-                self.read_version()
+            if not self._result:
+                if code == b'H' and not self.version:
+                    if self._result:
+                        raise ParseError('Encountered duplicate type header')
+                    self.read_version()
 
-            elif code == b'R' and self.version == 2 and not self._result:
-                self._result = Reply(version=self.version)
+                elif not self.version and code == b'c':
+                    self.read_version()
+                    self._result = Call(version=self.version)
 
-            elif self.version == 1 and code == b'c':
-                if self._result:
-                    raise ParseError('Encountered duplicate type header')
-                self.read_version()
-                self._result = Call(version=self.version)
+                elif self.version == 2 and code == b'R':
+                    self._result = Reply(version=self.version)
 
-            elif not self._result and code == b'r':
-                self.read_version()
-                self._result = Reply(version=self.version)
+                elif self.version == 2 and code == b'C':
+                    method_name = self.read_object()
+                    self._result = Call(method=method_name, version=self.version)
 
-            elif self.version == 2 and not self._result and code == b'F':
-                self._result = Reply(value=self._adapter._read_fault(),
-                    version=self.version)
-                break
+                elif not self._result and code == b'r':
+                    self.read_version()
+                    self._result = Reply(version=self.version)
 
-            else:
-                if not self._result:
+                elif self.version == 2 and not self._result and code == b'F':
+                    self._result = Reply(value=self._adapter._read_fault(),
+                        version=self.version)
+                    break
+                else:
                     raise ParseError("Invalid Hessian message marker: %r" % (code,))
-
+            else:
                 if self.version == 1 and code == b'H':
                     key, value = self._read_keyval()
                     self._result.headers[key] = value
@@ -111,7 +112,13 @@ class Parser(object):
 
                 else:
                     if isinstance(self._result, Call):
-                        self._result.args.append(self.read_object(code))
+                        if self.version == 2:
+                            num_args = self.read_object(code)
+                            for i in range(0, num_args):
+                                self._result.args.append(self.read_object())
+                            break
+                        else:
+                            self._result.args.append(self.read_object(code))
                     else:
                         if self._result.value:
                             raise ParseError('Encountered illegal extra object within reply')

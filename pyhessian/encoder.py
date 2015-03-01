@@ -323,7 +323,7 @@ class Encoder(object):
 
         encoded = pack('>cBB', b'c', call.version, 0)
         encoded += headers
-        encoded += pack('>cH', b'm', len(method)) + six.b(method)
+        encoded += pack('>cH', b'm', len(method)) + method
         encoded += arguments
         encoded += b'z'
 

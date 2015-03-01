@@ -3,6 +3,7 @@ import datetime
 import six
 
 from pyhessian import protocol
+from pyhessian.parser import Parser
 from pyhessian.data_types import long
 from .base import HessianTestCase
 
@@ -423,6 +424,12 @@ class ParserV1TestCase(HessianTestCase):
         reply = self.client.replyString_emoji()
         self.assertEqual(expected, reply)
 
+    def test_parse_call(self):
+        expected = protocol.Call(method=b'methodNull', args=[], version=1)
+        encoded = b'c\x01\x00m\x00\nmethodNullz'
+        decoded = Parser().parse_string(encoded)
+        self.assertEqual(expected, decoded)
+
 
 class ParserV2TestCase(ParserV1TestCase):
 
@@ -552,3 +559,9 @@ class ParserV2TestCase(ParserV1TestCase):
         reply = self.client.replyTypedMap_3()
         expected = {('a', ): 0}
         self.assertEqual(expected, reply)
+
+    def test_parse_call(self):
+        expected = protocol.Call(method=b'methodNull', args=[], version=2)
+        encoded = b'H\x02\x00C\x0amethodNull\x90'
+        decoded = Parser().parse_string(encoded)
+        self.assertEqual(expected, decoded)
