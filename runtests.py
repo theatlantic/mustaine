@@ -8,5 +8,5 @@ from tests import all_tests
 if __name__ == "__main__":
     tests = all_tests()
     results = unittest.TextTestRunner().run(tests)
-    if results.failures:
+    if results.failures or results.errors:
         sys.exit(1)
