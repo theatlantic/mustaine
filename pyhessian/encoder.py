@@ -1,3 +1,4 @@
+import re
 import functools
 import datetime
 import calendar
@@ -160,39 +161,81 @@ class Encoder(object):
     def encode_date(self, value):
         return pack('>cq', b'd', int(calendar.timegm(value.timetuple())) * 1000)
 
+    try:
+        # UCS-4
+        high_codepoints_re = re.compile(u'([\U00010000-\U0010ffff])', re.UNICODE)
+    except re.error:
+        # UCS-2
+        high_codepoints_re = re.compile(u'([\uD800-\uDBFF][\uDC00-\uDFFF])')
+
+    def _unicode_encode(self, value):
+        """
+        Encode the value to unicode, splitting high plane codepoints into
+        surrogate pairs.
+        """
+        splits = self.high_codepoints_re.split(value)
+        enc_value = b''
+        str_len = 0
+        for s in splits:
+            if self.high_codepoints_re.match(s):
+                str_len += 2
+                enc_value += self._encode_to_surrogate_pair(s)
+            else:
+                str_len += len(s)
+                enc_value += s.encode('utf-8')
+        return str_len, enc_value
+
+    def _encode_to_surrogate_pair(self, char):
+        if len(char) == 2:
+            s = char[0].encode('utf-8') + char[1].encode('utf-8')
+        else:
+            code = ord(char) - 0x10000
+            c1 = six.unichr(0xD800 | (code >> 10))
+            c2 = six.unichr(0xDC00 | (code & 0x3FF))
+            if six.PY2:
+                s = c1.encode('utf-8') + c2.encode('utf-8')
+            else:
+                s = (c1.encode('utf-8', 'surrogatepass')
+                    + c2.encode('utf-8', 'surrogatepass'))
+        return s
+
     @encoder_for(six.text_type)
     def encode_unicode(self, value):
         encoded = b''
 
-        while len(value) > 65535:
-            encoded += pack('>cH', b's', 65535)
-            encoded += value[:65535].encode('utf-8')
-            value = value[65535:]
+        while len(value) > 32767:
+            str_len, enc_value = self._unicode_encode(value[:32767])
+            encoded += pack('>cH', b's', str_len)
+            encoded += enc_value
+            value = value[32767:]
 
-        encoded += pack('>cH', b'S', len(value))
-        encoded += value.encode('utf-8')
+        str_len, enc_value = self._unicode_encode(value)
+        encoded += pack('>cH', b'S', str_len)
+        encoded += enc_value
+
         return encoded
 
-    @encoder_for(str)
-    def encode_string(self, value):
-        encoded = b''
+    if six.PY2:
+        @encoder_for(str)
+        def encode_string(self, value):
+            encoded = b''
 
-        try:
-            value = value.encode('ascii')
-        except UnicodeDecodeError:
-            raise TypeError(
-                "pyhessian.encoder cowardly refuses to guess the encoding for "
-                "string objects containing bytes out of range 0x00-0x79; use "
-                "Binary or unicode objects instead")
+            try:
+                value = value.encode('ascii')
+            except UnicodeDecodeError:
+                raise TypeError(
+                    "pyhessian.encoder cowardly refuses to guess the encoding for "
+                    "string objects containing bytes out of range 0x00-0x79; use "
+                    "Binary or unicode objects instead")
 
-        while len(value) > 65535:
-            encoded += pack('>cH', b's', 65535)
-            encoded += value[:65535]
-            value = value[65535:]
+            while len(value) > 65535:
+                encoded += pack('>cH', b's', 65535)
+                encoded += value[:65535]
+                value = value[65535:]
 
-        encoded += pack('>cH', b'S', len(value.decode('utf-8')))
-        encoded += value
-        return encoded
+            encoded += pack('>cH', b'S', len(value.decode('utf-8')))
+            encoded += value
+            return encoded
 
     @encoder_for(list)
     def encode_list(self, obj):

@@ -231,7 +231,13 @@ class ParserV1(object):
                 bytes.append(byte + self._read(3))
             len -= 1
 
-        return reduce(operator.add, bytes, b'').decode('utf-8')
+        try:
+            return reduce(operator.add, bytes, b'').decode('utf-8')
+        except UnicodeDecodeError:
+            if six.PY2:
+                raise
+            # We're possibly dealing with surrogate pairs in Python 3
+            return self._decode_byte_array(bytes)
 
     def _read_binary(self, len=None):
         if len is None:
@@ -324,6 +330,33 @@ class ParserV1(object):
         value = self._read_object(self._read(1))
 
         return key, value
+
+    def _decode_byte_array(self, bytes):
+        s = ''
+        while(len(bytes)):
+            b, bytes = bytes[0], bytes[1:]
+            if six.PY2:
+                c = b.decode('utf-8')
+            else:
+                c = b.decode('utf-8', 'surrogatepass')
+                if '\uD800' <= c <= '\uDBFF':
+                    b, bytes = bytes[0], bytes[1:]
+                    c2 = b.decode('utf-8', 'surrogatepass')
+                    c = self._decode_surrogate_pair(c, c2)
+            s += c
+        return s
+
+    def _decode_surrogate_pair(self, c1, c2):
+        """
+        Python 3 no longer decodes surrogate pairs for us; we have to do it
+        ourselves.
+        """
+        if not('\uD800' <= c1 <= '\uDBFF') or not ('\uDC00' <= c2 <= '\uDFFF'):
+            raise Exception("Invalid UTF-16 surrogate pair")
+        code = 0x10000
+        code += (ord(c1) & 0x03FF) << 10
+        code += (ord(c2) & 0x03FF)
+        return chr(code)
 
 
 class ParserV2(ParserV1):
@@ -521,7 +554,14 @@ class ParserV2(ParserV1):
                 code = self._read(1)
             except ParseError:
                 break
-        return reduce(operator.add, chunks, b'').decode('utf-8')
+
+        try:
+            return reduce(operator.add, chunks, b'').decode('utf-8')
+        except UnicodeDecodeError:
+            if six.PY2:
+                raise
+            # We're possibly dealing with surrogate pairs in Python 3
+            return self._decode_byte_array(chunks)
 
     def _read_class_def(self):
         type_name = self._read_object()
@@ -569,7 +609,13 @@ class ParserV2(ParserV1):
                 bytes.append(byte + self._read(3))
             length -= 1
 
-        return reduce(operator.add, bytes, b'').decode('utf-8')
+        try:
+            return reduce(operator.add, bytes, b'').decode('utf-8')
+        except UnicodeDecodeError:
+            if six.PY2:
+                raise
+            # We're possibly dealing with surrogate pairs in Python 3
+            return self._decode_byte_array(bytes)
 
     def _read_binary(self, code, length=None):
         chunks = []

@@ -418,6 +418,11 @@ class ParserV1TestCase(HessianTestCase):
         with self.assertRaises(protocol.Fault):
             self.client.nonExistantMethod()
 
+    def test_parse_string_emoji(self):
+        expected = u"\U0001F603"
+        reply = self.client.replyString_emoji()
+        self.assertEqual(expected, reply)
+
 
 class ParserV2TestCase(ParserV1TestCase):
 

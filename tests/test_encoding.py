@@ -370,3 +370,7 @@ class EncoderTestCase(HessianTestCase):
     def test_encode_true(self):
         response = self.client.argTrue(True)
         self.assertEqual(response, True, "Debug response: %s" % response)
+
+    def test_encode_string_emoji(self):
+        response = self.client.argString_emoji(u"\U0001F603")
+        self.assertTrue(response, "Debug response: %s" % response)

@@ -10,6 +10,17 @@ public class Main extends TestHessian2Servlet {
 
     private static final long serialVersionUID = -3429056066423924965L;
 
+    public String replyString_emoji() {
+        return "\uD83D\uDE03";
+    }
+
+    public Object argString_emoji(Object v) {
+        if (v.equals(replyString_emoji())) {
+            return true;
+        }
+        return getInputDebug();
+    }
+
     public static void main(String[] args) throws Exception {
         Server server = new Server(0);
         ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
