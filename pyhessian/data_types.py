@@ -1,8 +1,8 @@
 __all__ = ['long']
 
 
-if hasattr(__builtins__, 'long'):
-    long = long
+if 'long' in __builtins__:
+    long = __builtins__['long']
 else:
     class long(int):
         pass
