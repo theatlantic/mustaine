@@ -1,9 +1,15 @@
 import os
 import sys
-from setuptools import find_packages, setup
-from setuptools.command.test import test as TestCommand
 
-from pyhessian import __version__
+try:
+    from setuptools import setup, find_packages
+    from setuptools.command.test import test as TestCommand
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup, find_packages
+    from setuptools.command.test import test as TestCommand
+
 
 if sys.version_info < (2, 6):
     raise NotImplementedError("python-hessian requires Python 2.6 or later")
@@ -28,22 +34,26 @@ class Tox(TestCommand):
 
 setup(
     name="python-hessian",
-    version=__version__,
+    version='1.0.1',
     description="Hessian RPC Library",
     long_description=open(
         os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Topic :: Software Development :: Object Brokering',
         'Topic :: Software Development :: Libraries',
+        "Programming Language :: Python :: 2",
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
     ],
-
     url="https://github.com/theatlantic/python-hessian",
-
+    install_requires=['six>=1.7.0'],
     author="Frankie Dintino",
     author_email="fdintino@theatlantic.com",
     license="BSD",

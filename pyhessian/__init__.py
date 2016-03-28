@@ -29,5 +29,9 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-version_info = (1, 0, 1)
-__version__ =  ".".join(map(str, version_info))
+import pkg_resources
+
+try:
+    __version__ = pkg_resources.get_distribution('python-hessian').version
+except pkg_resources.DistributionNotFound:
+    __version__ = None
