@@ -332,4 +332,4 @@ class Encoder(object):
 
 def encode_object(obj):
     encoder = Encoder()
-    return encoder.encode(obj)
+    return pack('>cH', b'r', 1)+encoder.encode(obj)+b'z'
