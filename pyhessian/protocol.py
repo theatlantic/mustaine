@@ -77,8 +77,8 @@ class Call(object):
 class Reply(object):
 
     def __init__(self, value=None, headers=None, version=None):
-        self.value = value # unmanaged property
-        self._headers = headers or dict()
+        self.value = value  # unmanaged property
+        self._headers = headers or {}
         self.version = version
 
     def _get_headers(self):
@@ -126,7 +126,7 @@ class Binary(object):
         self.value = value
 
     def __add__(self, value):
-        if self.value == None:
+        if self.value is None:
             return Binary(value)
         else:
             return Binary(self.value + value.value)
@@ -233,4 +233,7 @@ def cls_factory(name, fields=None, bases=None, attrs=None):
 def object_factory(name, fields=None, bases=None, attrs=None, **kwargs):
     if fields is None and kwargs:
         fields = kwargs.keys()
-    return cls_factory(name, fields, bases, attrs)(**kwargs)
+    cls = cls_factory(name, fields, bases, attrs)
+    obj = cls.__new__(cls)
+    obj.__setstate__(kwargs)
+    return obj
