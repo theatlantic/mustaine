@@ -480,8 +480,8 @@ class ParserV1TestCase(HessianTestCase):
             self.client.nonExistantMethod()
 
     def test_parse_string_emoji(self):
-        expected = u"\U0001F603"
-        reply = self.client.replyString_emoji()
+        expected = u"\U0001F603".encode('utf-8')
+        reply = self.client.replyString_emoji().encode('utf-8')
         self.assertEqual(expected, reply)
 
     def test_parse_call(self):
