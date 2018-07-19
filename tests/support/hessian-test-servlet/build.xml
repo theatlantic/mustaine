@@ -99,7 +99,7 @@ To display the available targets type:
     <property name="lib"                value="lib"/>
     <property name="class-prefix"       value="com.theatlantic.hessiantest"/>
     <property name="jdk.javadoc"        value="http://docs.oracle.com/javase/1.4.2/docs/api/"/>
-    <property name="dl.jetty"           value="http://download.eclipse.org/jetty/9.2.9.v20150224/dist/jetty-distribution-9.2.9.v20150224.zip" />
+    <property name="dl.jetty"           value="https://repo1.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.2.9.v20150224/jetty-distribution-9.2.9.v20150224.zip" />
     <property name="dl.jetty.md5"       value="c1364f818901fe202953508a626b889c" />
     <property name="dl.hessian"         value="http://hessian.caucho.com/download/hessian-4.0.37.jar" />
     <property name="dl.hessian.md5"     value="8249c56cc957145a05323a8314713b20" />
