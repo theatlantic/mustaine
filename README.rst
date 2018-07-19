@@ -1,5 +1,8 @@
-About
------
+python-hessian
+==============
+
+.. image:: https://travis-ci.org/theatlantic/python-hessian.svg?branch=master
+    :target: https://travis-ci.org/theatlantic/python-hessian
 
 **python-hessian** is a Python implemention of Hessian, a binary web services
 protocol. It supports the `Hessian 1.0.2 specification
