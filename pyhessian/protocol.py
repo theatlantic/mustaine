@@ -89,7 +89,7 @@ class Reply(object):
             raise TypeError("Call.headers must be a dict of strings to objects")
 
         for key in value.keys():
-            if not isinstance(key, basestring):
+            if not isinstance(key, six.string_types):
                 raise TypeError("Call.headers must be a dict of strings to objects")
 
         self._headers = value
