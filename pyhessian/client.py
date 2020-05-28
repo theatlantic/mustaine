@@ -34,7 +34,8 @@ class HessianProxy(object):
 
     def __init__(self, service_uri, credentials=None, key_file=None,
             cert_file=None, timeout=10, buffer_size=65535,
-            error_factory=identity_func, overload=False, version=1):
+            error_factory=identity_func, overload=False, version=1,
+            context=None):
         self.version = version
         self.timeout = timeout
         self._buffer_size = buffer_size
@@ -42,6 +43,7 @@ class HessianProxy(object):
         self._overload = overload
         self.key_file = key_file
         self.cert_file = cert_file
+        self.context = context
         self._uri = urlparse(service_uri)
 
         if self._uri.scheme not in ('http', 'https'):
@@ -73,6 +75,7 @@ class HessianProxy(object):
             kwargs.update({
                 'key_file': self.key_file,
                 'cert_file': self.cert_file,
+                'context': self.context,
             })
         else:
             connection_cls = HTTPConnection
