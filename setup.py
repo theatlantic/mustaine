@@ -34,7 +34,7 @@ class Tox(TestCommand):
 
 setup(
     name="python-hessian",
-    version='1.1.2',
+    version='1.2.0',
     description="Hessian RPC Library",
     long_description=open(
         os.path.join(os.path.dirname(__file__), 'README.rst')).read(),
