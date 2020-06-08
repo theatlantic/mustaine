@@ -63,5 +63,5 @@ setup(
     tests_require=['tox'],
     cmdclass={'test': Tox},
     platforms="any",
-    packages=find_packages(exclude=["test"]),
+    packages=find_packages(exclude=["tests"]),
     zip_safe=True)
