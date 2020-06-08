@@ -33,15 +33,20 @@ def identity_func(val):
 class HessianProxy(object):
 
     def __init__(self, service_uri, credentials=None, key_file=None,
-            cert_file=None, timeout=10, buffer_size=65535,
+            cert_file=None, timeout=10, buffer_size=65535, context=None,
             error_factory=identity_func, overload=False, version=1):
         self.version = version
         self.timeout = timeout
         self._buffer_size = buffer_size
         self._error_factory = error_factory
         self._overload = overload
-        self.key_file = key_file
-        self.cert_file = cert_file
+        self._https_kwargs = {}
+        if key_file:
+            self._https_kwargs['key_file'] = key_file
+        if cert_file:
+            self._https_kwargs['cert_file'] = cert_file
+        if context:
+            self._https_kwargs['context'] = context
         self._uri = urlparse(service_uri)
 
         if self._uri.scheme not in ('http', 'https'):
@@ -70,10 +75,7 @@ class HessianProxy(object):
         if self._uri.scheme == 'https':
             connection_cls = HTTPSConnection
             default_port = 443
-            kwargs.update({
-                'key_file': self.key_file,
-                'cert_file': self.cert_file,
-            })
+            kwargs.update(self._https_kwargs)
         else:
             connection_cls = HTTPConnection
             default_port = 80

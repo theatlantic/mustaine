@@ -16,7 +16,9 @@ from pyhessian.client import HessianProxy
 SUPPORT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), 'support'))
 TEST_JAR = os.path.join(SUPPORT_DIR, 'hessian-test-servlet.jar')
 
-re_port_number = re.compile(r'Listening on port: (\d+)$')
+re_port_number = re.compile(
+    r'Listening on http port: (?P<http_port>\d+), '
+    r'ssl port: (?P<ssl_port>\d+)$')
 
 
 class HessianTestCase(unittest.TestCase):
@@ -27,10 +29,11 @@ class HessianTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        proc, port_num = cls.init_test_server()
+        proc, http_port, ssl_port = cls.init_test_server()
         cls.proc = proc
         try:
-            cls.api_url = "http://localhost:%d/api" % port_num
+            cls.api_url = "http://localhost:%d/api" % http_port
+            cls.api_url_ssl = "https://localhost:%d/api" % ssl_port
         except:
             cls.kill_test_server()
             raise
@@ -55,7 +58,8 @@ class HessianTestCase(unittest.TestCase):
             lambda p: p.kill() or setattr(p, 'timed_out', True), [proc])
         timer.start()
 
-        port_num = None
+        http_port = None
+        ssl_port = None
         stderr = b''
 
         while True:
@@ -71,9 +75,10 @@ class HessianTestCase(unittest.TestCase):
                     stderr += proc.stderr.readline()
 
             if line is not None:
-                port_num_matches = re_port_number.search(line.decode('utf-8'))
-                if port_num_matches:
-                    port_num = int(port_num_matches.group(1))
+                matches = re_port_number.search(line.decode('utf-8'))
+                if matches:
+                    http_port = matches.group('http_port')
+                    ssl_port = matches.group('ssl_port')
                     timer.cancel()
                     break
 
@@ -83,7 +88,7 @@ class HessianTestCase(unittest.TestCase):
                 else:
                     raise Exception("Process terminated unexpectedly\n%s" % stderr.decode('utf-8'))
 
-        return proc, port_num
+        return proc, int(http_port), int(ssl_port)
 
     @classmethod
     def kill_test_server(cls):

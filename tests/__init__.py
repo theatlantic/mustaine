@@ -5,6 +5,7 @@ except ImportError:
 
 from .test_encoding import EncoderTestCase
 from .test_parser import ParserV1TestCase, ParserV2TestCase
+from .test_ssl import HttpsTestCase
 
 
 def all_tests():
@@ -12,4 +13,5 @@ def all_tests():
     suite.addTest(unittest.makeSuite(EncoderTestCase))
     suite.addTest(unittest.makeSuite(ParserV1TestCase))
     suite.addTest(unittest.makeSuite(ParserV2TestCase))
+    suite.addTest(unittest.makeSuite(HttpsTestCase))
     return suite

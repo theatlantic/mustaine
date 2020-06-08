@@ -103,7 +103,7 @@ To display the available targets type:
     <property name="dl.jetty.md5"       value="c1364f818901fe202953508a626b889c" />
     <property name="dl.hessian"         value="http://hessian.caucho.com/download/hessian-4.0.37.jar" />
     <property name="dl.hessian.md5"     value="8249c56cc957145a05323a8314713b20" />
-    <property name="dl.servlet-api"     value="http://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar" />
+    <property name="dl.servlet-api"     value="https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar" />
     <property name="dl.servlet-api.md5" value="79de69e9f5ed8c7fcb8342585732bbf7" />
 
 
@@ -267,7 +267,7 @@ To display the available targets type:
       <manifest>
         <attribute name="Implementation-Title" value="Hessian Test"/>
         <attribute name="Implementation-Version" value="${completeVersion}"/>
-        <attribute name="Implementation-Vendor" value="The Atlantic &lt;http://www.theatlantic.com/&gt;"/>
+        <attribute name="Implementation-Vendor" value="The Atlantic &lt;https://www.theatlantic.com/&gt;"/>
         <attribute name="Build-Id" value="${build.id}"/>
         <attribute name="Main-Class" value="${class-prefix}.Main"/>
       </manifest>
@@ -275,6 +275,7 @@ To display the available targets type:
       <fileset dir="${dest}" excludes="**/.git*">
         <include name="**/*.class"/>
       </fileset>
+      <fileset dir="${src}/resources"/>
     </jar>
   </target>
 
@@ -284,7 +285,7 @@ To display the available targets type:
       <manifest>
         <attribute name="Implementation-Title" value="Hessian Test Servlet library"/>
         <attribute name="Implementation-Version" value="${completeVersion}"/>
-        <attribute name="Implementation-Vendor" value="The Atlantic &lt;http://www.theatlantic.com/&gt;"/>
+        <attribute name="Implementation-Vendor" value="The Atlantic &lt;https://www.theatlantic.com/&gt;"/>
         <attribute name="Build-Id" value="${build.id}"/>
         <attribute name="Main-Class" value="${class-prefix}.Main"/>
       </manifest>
