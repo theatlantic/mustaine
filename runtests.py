@@ -2,7 +2,11 @@
 
 import sys
 import unittest
-from tests import all_tests
+import warnings
+
+warnings.simplefilter("error", Warning)
+
+from tests import all_tests  # noqa
 
 
 if __name__ == "__main__":

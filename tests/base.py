@@ -2,6 +2,7 @@ import os
 import re
 from subprocess import Popen, PIPE
 import select
+import signal
 from threading import Timer
 
 try:
@@ -26,19 +27,17 @@ class HessianTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        proc, port_num = cls.init_test_server()
+        cls.proc = proc
         try:
-            proc, port_num = cls.init_test_server()
-        except:
-            # Fall back to public test server
-            cls.api_url = "http://hessian.caucho.com/test/test"
-        else:
-            cls.proc = proc
             cls.api_url = "http://localhost:%d/api" % port_num
+        except:
+            cls.kill_test_server()
+            raise
 
     @classmethod
     def tearDownClass(cls):
-        if cls.proc:
-            cls.proc.kill()
+        cls.kill_test_server()
 
     def setUp(self):
         self.client = HessianProxy(self.api_url, version=self.version)
@@ -78,10 +77,25 @@ class HessianTestCase(unittest.TestCase):
                     timer.cancel()
                     break
 
-            if proc.poll() != None:
+            if proc.poll() is not None:
                 if getattr(proc, 'timed_out', False):
                     raise Exception("Timed out waiting for port\n%s" % stderr.decode('utf-8'))
                 else:
                     raise Exception("Process terminated unexpectedly\n%s" % stderr.decode('utf-8'))
 
         return proc, port_num
+
+    @classmethod
+    def kill_test_server(cls):
+        if cls.proc:
+            try:
+                cls.proc.stdout.close()
+            except:
+                pass
+            try:
+                cls.proc.stderr.close()
+            except:
+                pass
+            os.kill(cls.proc.pid, signal.SIGKILL)
+            cls.proc.wait()
+            cls.proc = None
