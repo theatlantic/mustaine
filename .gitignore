@@ -19,3 +19,4 @@ tests/support/hessian-test-servlet/lib/jetty-security-9.2.9.v20150224.jar
 tests/support/hessian-test-servlet/lib/jetty-server-9.2.9.v20150224.jar
 tests/support/hessian-test-servlet/lib/jetty-servlet-9.2.9.v20150224.jar
 tests/support/hessian-test-servlet/lib/jetty-util-9.2.9.v20150224.jar
+.coverage
