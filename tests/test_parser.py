@@ -12,8 +12,8 @@ from pyhessian.data_types import long
 
 
 @pytest.fixture
-def client_v1(hessian_client_v2):
-    yield hessian_client_v2
+def client_v1(hessian_client_v1):
+    yield hessian_client_v1
 
 
 @pytest.fixture
