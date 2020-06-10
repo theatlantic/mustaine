@@ -566,6 +566,38 @@ def test_parse_string_emoji(client):
     assert reply == expected
 
 
+def test_parse_compact_string_unicode_two_octets(client):
+    expected = u'\xe9'
+    reply = client.replyString_unicodeTwoOctetsCompact()
+    assert reply == expected
+
+
+def test_parse_compact_string_unicode_three_octets(client):
+    expected = u'\u5b57'
+    reply = client.replyString_unicodeThreeOctetsCompact()
+    assert reply == expected
+
+
+def test_parse_string_unicode_two_octets(client):
+    expected = u'\xe9' * 64
+    reply = client.replyString_unicodeTwoOctets()
+    assert reply == expected
+
+
+def test_parse_string_unicode_three_octets(client):
+    expected = u'\u5b57' * 64
+    reply = client.replyString_unicodeThreeOctets()
+    assert reply == expected
+
+
+def test_parse_list_of_lists_with_ref(client):
+    obj = protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
+    l = (obj, obj)
+    expected = (l, l)
+    reply = client.replyListOfListWithRefs()
+    assert reply == expected
+
+
 def test_parse_v1_call(client_v1):
     expected = protocol.Call(method=b'methodNull', args=[], version=1)
     encoded = b'c\x01\x00m\x00\nmethodNullz'

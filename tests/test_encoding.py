@@ -370,10 +370,8 @@ def test_encode_object_2a(client):
 
 
 def test_encode_object_2b(client):
-    payload = [
-        protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-        protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0),
-    ]
+    obj = protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
+    payload = [obj, obj]
 
     response = client.argObject_2b(payload)
     assert response is True, "Debug response: %s" % response
@@ -432,4 +430,84 @@ def test_encode_true(client):
 
 def test_encode_string_emoji(client):
     response = client.argString_emoji(u"\U0001F603")
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_compact_string_unicode_two_octets(client):
+    arg = u'\xe9'
+    response = client.argString_unicodeTwoOctetsCompact(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_compact_string_unicode_three_octets(client):
+    arg = u'\u5b57'
+    response = client.argString_unicodeThreeOctetsCompact(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_string_unicode_two_octets(client):
+    arg = u'\xe9' * 64
+    response = client.argString_unicodeTwoOctets(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_string_unicode_three_octets(client):
+    arg = u'\u5b57' * 64
+    response = client.argString_unicodeThreeOctets(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_list_of_lists_with_ref(client):
+    obj = protocol.object_factory('com.caucho.hessian.test.TestObject', _value=0)
+    l = (obj, obj)
+    arg = (l, l)
+    response = client.argListOfListWithRefs(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_fixed_list_0(client):
+    arg = tuple([])
+    response = client.argUntypedFixedList_0(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_fixed_list_1(client):
+    arg = ("1", )
+    response = client.argUntypedFixedList_1(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_fixed_list_7(client):
+    arg = ("1", "2", "3", "4", "5", "6", "7")
+    response = client.argUntypedFixedList_7(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_fixed_list_8(client):
+    arg = ("1", "2", "3", "4", "5", "6", "7", "8")
+    response = client.argUntypedFixedList_8(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_map_0(client):
+    arg = {}
+    response = client.argUntypedMap_0(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_map_1(client):
+    arg = {"a": 0}
+    response = client.argUntypedMap_1(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_map_2(client):
+    arg = {0: "a", 1: "b"}
+    response = client.argUntypedMap_2(arg)
+    assert response is True, "Debug response: %s" % response
+
+
+def test_encode_untyped_map_3(client):
+    arg = {('a', ): 0}
+    response = client.argUntypedMap_3(arg)
     assert response is True, "Debug response: %s" % response
