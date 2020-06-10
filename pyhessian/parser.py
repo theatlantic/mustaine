@@ -287,6 +287,7 @@ class ParserV1(object):
             fixed_length = True
 
         result = []
+        ref_idx = len(self._refs)
         self._refs.append(result)
 
         while code != b'z':
@@ -294,9 +295,9 @@ class ParserV1(object):
             code = self._read(1)
 
         if fixed_length:
-            return tuple(result)
-        else:
-            return result
+            result = self._refs[ref_idx] = tuple(result)
+
+        return result
 
     def _read_map(self):
         code = self._read(1)
@@ -509,6 +510,7 @@ class ParserV2(ParserV1):
             self._read_object()
 
         result = []
+        ref_idx = len(self._refs)
         self._refs.append(result)
 
         if fixed_length:
@@ -526,9 +528,9 @@ class ParserV2(ParserV1):
                     result.append(obj)
 
         if fixed_length:
-            return tuple(result)
-        else:
-            return result
+            result = self._refs[ref_idx] = tuple(result)
+
+        return result
 
     def _read_v2_string(self, code, length):
         if length == 0:
