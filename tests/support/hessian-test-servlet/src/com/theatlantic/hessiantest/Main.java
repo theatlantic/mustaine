@@ -8,6 +8,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jetty.security.ConstraintMapping;
+import org.eclipse.jetty.security.ConstraintSecurityHandler;
+import org.eclipse.jetty.security.HashLoginService;
+import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -20,6 +25,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import com.caucho.hessian.test.TestHessian2Servlet;
@@ -145,6 +151,27 @@ public class Main extends TestHessian2Servlet {
         }
     }
 
+    private static ConstraintSecurityHandler addAuth(Server server) {
+        String realmResourceName = "realm.properties";
+        String realmProps = Main.class.getResource("/realm.properties").toExternalForm();
+        LoginService loginService = new HashLoginService("Realm", realmProps);
+        server.addBean(loginService);
+        ConstraintSecurityHandler handler = new ConstraintSecurityHandler();
+        server.setHandler(handler);
+        Constraint constraint = new Constraint();
+        constraint.setName("auth");
+        constraint.setAuthenticate(true);
+        constraint.setRoles(new String[]{"user", "admin"});
+        ConstraintMapping mapping = new ConstraintMapping();
+        mapping.setPathSpec("/auth/api");
+        mapping.setConstraint(constraint);
+
+        handler.setConstraintMappings(Collections.singletonList(mapping));
+        handler.setAuthenticator(new BasicAuthenticator());
+        handler.setLoginService(loginService);
+        return handler;
+    }
+
     public static void main(String[] args) throws Exception {
         server = new Server(0);
   
@@ -179,7 +206,10 @@ public class Main extends TestHessian2Servlet {
   
         server.setConnectors(new Connector[]{httpConnector, sslConnector});
   
+        contextHandler.insertHandler(addAuth(server));
+  
         servletHolder = servletHandler.addServletWithMapping(Main.class, "/api");
+        servletHolder = servletHandler.addServletWithMapping(Main.class, "/auth/api");
   
         server.start();
         System.out.println("Listening on http port: " + httpPort + ", ssl port: " + sslPort);

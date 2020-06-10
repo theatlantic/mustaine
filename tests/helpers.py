@@ -60,6 +60,11 @@ class ServletProcessWrapper(object):
             return "http://localhost:%d/api" % self.http_port
 
     @property
+    def http_auth_url(self):
+        if self.http_port:
+            return "http://admin:password@localhost:%d/api" % self.http_port
+
+    @property
     def https_url(self):
         if self.ssl_port:
             return "https://localhost:%d/api" % self.ssl_port
