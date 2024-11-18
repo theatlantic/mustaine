@@ -508,12 +508,12 @@ class ParserV2(ParserV1):
             return super(ParserV2, self)._read_object(code)
 
     def _read_list(self, typed=False, fixed_length=False, length=None):
-        if length == 0:
-            return tuple([]) if fixed_length else []
-
         if typed:
             # read and discard list type
             self._read_object()
+
+        if length == 0:
+            return tuple([]) if fixed_length else []
 
         result = []
         ref_idx = len(self._refs)
