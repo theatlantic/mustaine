@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 
 try:
@@ -13,6 +14,17 @@ except ImportError:
 
 if sys.version_info < (2, 6):
     raise NotImplementedError("python-hessian requires Python 2.6 or later")
+
+
+init_file = os.path.join(os.path.dirname(__file__), "pyhessian", "__init__.py")
+with open(init_file, "r") as f:
+    for line in f:
+        m = re.search(r"""^__version__ = (['"])(.+?)\1$""", line)
+        if m is not None:
+            version = m.group(2)
+            break
+    else:
+        raise LookupError("Unable to find __version__ in " + init_file)
 
 
 class Tox(TestCommand):
@@ -34,7 +46,7 @@ class Tox(TestCommand):
 
 setup(
     name="python-hessian",
-    version='1.1.2',
+    version=version,
     description="Hessian RPC Library",
     long_description=open(
         os.path.join(os.path.dirname(__file__), 'README.rst')).read(),

@@ -29,9 +29,4 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import pkg_resources
-
-try:
-    __version__ = pkg_resources.get_distribution('python-hessian').version
-except pkg_resources.DistributionNotFound:
-    __version__ = None
+__version__ = '1.1.2'
