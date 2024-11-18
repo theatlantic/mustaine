@@ -27,7 +27,7 @@ class ListMapTerminator(Exception):
 
 class Parser(object):
 
-    version = None
+    _version = None
     _adapter = None
 
     def __init__(self):
@@ -87,10 +87,8 @@ class Parser(object):
                     key, value = self._read_keyval()
                     self._result.headers[key] = value
 
-                elif self.version == 1 and code == b'm':
-                    if not isinstance(self._result, Call):
-                        raise ParseError('Encountered illegal method name within reply')
-
+                elif isinstance(self._result, Call) and code == b'm':
+                    self.version = 1
                     if self._result.method:
                         raise ParseError('Encountered duplicate method name definition')
 
@@ -136,11 +134,19 @@ class Parser(object):
         except ListMapTerminator:
             raise ParseError("Unhandled list/map terminator code ('Z')")
 
-    def read_version(self):
-        version = unpack('<h', self._read(2))[0]
+    @property
+    def version(self):
+        return self._version
+
+    @version.setter
+    def version(self, version):
         if version not in self._version_adapters:
             raise ParseError("Encountered unrecognized call version %r" % (version,))
         self._adapter = self._version_adapters[version](base_parser=self)
+        self._version = version
+
+    def read_version(self):
+        version = unpack('<h', self._read(2))[0]
         self.version = version
 
     def _read(self, n):
